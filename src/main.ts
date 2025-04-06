@@ -1,7 +1,7 @@
-import './app.css';
-import App from './lib/components/App.svelte';
+// src/main.ts
+import MainWidget from './lib/components/MainWidget.svelte';
 
-const app = new App({
+const app = new MainWidget({
   target: document.getElementById('app') || document.body,
 });
 

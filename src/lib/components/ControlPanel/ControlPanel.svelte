@@ -24,21 +24,22 @@
 
 <style>
 	.control-panel {
-		background-color: #f9f9f9;
+		background-color: var(--card-background);
 		border-radius: 0.5rem;
 		padding: 1.5rem;
-		box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+		box-shadow: var(--shadow-md);
+		color: var(--text-color);
 	}
 
 	h2 {
 		margin-top: 0;
 		margin-bottom: 1.5rem;
-		color: #2c3e50;
+		color: var(--header-color);
 		font-size: 1.5rem;
 	}
 
 	h3 {
-		color: #34495e;
+		color: var(--header-color);
 		font-size: 1.2rem;
 		margin-bottom: 1rem;
 	}
