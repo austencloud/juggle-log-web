@@ -1,16 +1,14 @@
 {
 	"extends": "./.svelte-kit/tsconfig.json",
-	"include": ["src/**/*.svelte", "src/**/*.ts", "src/**/*.js"],
 	"compilerOptions": {
-		"allowJs": true,
-		"checkJs": true,
-		"esModuleInterop": true,
-		"forceConsistentCasingInFileNames": true,
-		"resolveJsonModule": true,
-		"skipLibCheck": true,
-		"sourceMap": true,
-		"strict": true,
-		"moduleResolution": "bundler",
-		"types": ["@sveltejs/kit", "node"]
+	  "allowJs": true,
+	  "checkJs": true,
+	  "esModuleInterop": true,
+	  "forceConsistentCasingInFileNames": true,
+	  "resolveJsonModule": true,
+	  "skipLibCheck": true,
+	  "sourceMap": true,
+	  "strict": true
 	}
-}
+	// Note: If this file exists but gives an error, run "npx svelte-kit sync" locally first
+  }
