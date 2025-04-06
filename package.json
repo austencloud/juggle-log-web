@@ -1,5 +1,5 @@
 {
-	"name": "juggle-log",
+	"name": "juggle-log-web",
 	"version": "1.0.0",
 	"private": true,
 	"type": "module",
@@ -7,6 +7,7 @@
 		"dev": "vite dev",
 		"build": "vite build",
 		"preview": "vite preview",
+		"start": "npm run build && vite preview",
 		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch"
 	},
