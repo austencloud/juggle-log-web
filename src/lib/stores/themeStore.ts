@@ -5,54 +5,105 @@ import { browser } from '$app/environment';
 type Theme = 'light' | 'dark';
 
 function createThemeStore() {
-    // Always return dark as the initial theme
-    const getInitialTheme = (): Theme => 'dark';
+    // Get initial theme from localStorage or system preference
+    const getInitialTheme = (): Theme => {
+        if (!browser) return 'dark'; // SSR default
+
+        // Check localStorage first
+        const storedTheme = localStorage.getItem('juggleLogTheme');
+        if (storedTheme === 'light' || storedTheme === 'dark') {
+            return storedTheme;
+        }
+
+        // Then check system preference
+        if (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) {
+            return 'light';
+        }
+
+        // Default to dark
+        return 'dark';
+    };
 
     const { subscribe, set } = writable<Theme>(getInitialTheme());
+
+    // Listen for system theme changes
+    if (browser && window.matchMedia) {
+        const mediaQuery = window.matchMedia('(prefers-color-scheme: light)');
+        
+        const handleChange = (event: MediaQueryListEvent) => {
+            // Only update if user hasn't explicitly set a theme
+            if (!localStorage.getItem('juggleLogTheme')) {
+                set(event.matches ? 'light' : 'dark');
+                applyTheme(event.matches ? 'light' : 'dark');
+            }
+        };
+
+        // Add listener for change
+        if (mediaQuery.addEventListener) {
+            mediaQuery.addEventListener('change', handleChange);
+        } else {
+            // Fallback for older browsers
+            mediaQuery.addListener(handleChange);
+        }
+    }
 
     return {
         subscribe,
 
-        // No longer need toggle function but keeping for compatibility
+        // Toggle between light and dark
         toggle: () => {
-            // Do nothing - we're always in dark mode
-            console.log('Toggle attempted, but app is in permanent dark mode');
-        },
-
-        // Set theme explicitly - but only allow dark
-        set: (theme: Theme) => {
-            console.log('Setting theme to dark (ignoring requested theme)');
             if (browser) {
-                applyTheme('dark');
+                subscribe(currentTheme => {
+                    const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+                    localStorage.setItem('juggleLogTheme', newTheme);
+                    applyTheme(newTheme);
+                    set(newTheme);
+                })();
             }
-            set('dark');
         },
 
-        // Initialize theme on page load - always to dark
+        // Set theme explicitly
+        set: (theme: Theme) => {
+            if (browser) {
+                localStorage.setItem('juggleLogTheme', theme);
+                applyTheme(theme);
+            }
+            set(theme);
+        },
+
+        // Initialize theme on page load
         initialize: () => {
             if (browser) {
-                console.log('Initializing theme to dark');
-                applyTheme('dark');
-                set('dark');
+                const theme = getInitialTheme();
+                applyTheme(theme);
+                set(theme);
             }
         }
     };
 }
 
-// Helper function to apply theme
-function applyTheme(theme: Theme) {
-    console.log('Applying dark theme');
+// Helper function to apply theme to DOM
+function applyTheme(theme: Theme): void {
+    if (!browser) return;
 
-    // Store the setting in localStorage for consistency
-    localStorage.setItem('juggleLogTheme', 'dark');
+    // Add or remove theme class from html element
+    const rootEl = document.documentElement;
+    
+    if (theme === 'light') {
+        rootEl.classList.add('light-mode');
+        rootEl.classList.remove('dark-mode');
+    } else {
+        rootEl.classList.add('dark-mode');
+        rootEl.classList.remove('light-mode');
+    }
 
-    // Always add dark-mode class on root element
-    document.documentElement.classList.add('dark-mode');
-
-    // Optional: Update meta theme-color for mobile browsers
+    // Update meta theme-color for mobile browsers
     const metaThemeColor = document.querySelector('meta[name="theme-color"]');
     if (metaThemeColor) {
-        metaThemeColor.setAttribute('content', '#121212');
+        metaThemeColor.setAttribute(
+            'content', 
+            theme === 'light' ? '#f5f5f5' : '#121212'
+        );
     }
 }
 

@@ -4,19 +4,14 @@
 	import ControlPanel from './ControlPanel/ControlPanel.svelte';
 	import PatternTable from './PatternTable/PatternTable.svelte';
 
-	// Track window size
 	let windowWidth: number;
 
-	// Listen for window resize
 	function handleResize() {
 		windowWidth = window.innerWidth;
 	}
 
 	onMount(() => {
-		// Set initial window width
 		windowWidth = window.innerWidth;
-
-		// Add resize listener
 		window.addEventListener('resize', handleResize);
 
 		// Set theme color meta tag programmatically
@@ -25,7 +20,6 @@
 			metaThemeColor.setAttribute('content', '#121212');
 		}
 
-		// Cleanup
 		return () => {
 			window.removeEventListener('resize', handleResize);
 		};
@@ -34,33 +28,39 @@
 
 <svelte:window on:resize={handleResize} />
 
-<div class="app-container">
-	<header>
-		<div class="header-content">
-			<div class="title-section">
-				<h1>Juggle Log</h1>
-				<p class="subtitle">Track your juggling progress</p>
+<!-- 1) Wrap .app-container in a .outer-container -->
+<div class="outer-container">
+	<div class="app-container">
+		<header>
+			<div class="header-content">
+				<div class="title-section">
+					<h1>Juggle Log</h1>
+					<p class="subtitle">Track your juggling progress</p>
+				</div>
 			</div>
-		</div>
-	</header>
+		</header>
 
-	<main>
-		<section class="table-section">
-			<PatternTable />
-		</section>
+		<main>
+			<section class="table-section">
+				<PatternTable />
+			</section>
+			<section class="control-section">
+				<ControlPanel />
+			</section>
+		</main>
 
-		<section class="control-section">
-			<ControlPanel />
-		</section>
-	</main>
-
-	<footer>
-		<p>JuggleLog &copy; {new Date().getFullYear()}</p>
-	</footer>
+		<footer>
+			<p>JuggleLog &copy; {new Date().getFullYear()}</p>
+		</footer>
+	</div>
 </div>
 
 <style>
-	/* Global CSS Variables - Dark Mode Only */
+	/* 
+		==============================
+		Global Dark Mode Variables
+		==============================
+	*/
 	:global(:root) {
 		/* Dark mode colors */
 		--primary-color: #4ecdc4;
@@ -99,7 +99,6 @@
 		--shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
 	}
 
-	/* Global styles */
 	:global(*) {
 		box-sizing: border-box;
 	}
@@ -136,12 +135,9 @@
 
 	:global(button) {
 		cursor: pointer;
-		transition:
-			background-color 0.3s,
-			color 0.3s;
+		transition: background-color 0.3s, color 0.3s;
 	}
 
-	/* Media query for global styles - fixed */
 	@media (min-width: 768px) {
 		:global(html),
 		:global(body) {
@@ -149,11 +145,28 @@
 		}
 	}
 
-	/* Component-specific styles */
+	/*
+		==============================
+		Layout Centering
+		==============================
+	*/
+
+	/* 2) The wrapper that centers and limits width */
+	.outer-container {
+		max-width: 1200px;    /* Or 1000px, etc. for your preferred width */
+		margin: 0 auto;       /* This centers horizontally */
+		padding: 0 var(--spacing-lg); /* Optional horizontal padding */
+	}
+
+	/*
+		==============================
+		Main app container
+		==============================
+	*/
 	.app-container {
 		background-color: var(--background-color);
 		color: var(--text-color);
-		min-height: 100vh; /* Ensure container takes full height */
+		min-height: 100vh; 
 		display: flex;
 		flex-direction: column;
 	}
@@ -208,7 +221,6 @@
 		background-color: var(--card-background);
 	}
 
-	/* Responsive layout for larger screens */
 	@media (min-width: 1024px) {
 		main {
 			flex-direction: row;
