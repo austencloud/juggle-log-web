@@ -1,6 +1,6 @@
 [build]
   command = "npm install --legacy-peer-deps && npx svelte-kit sync && npm run build"
-  publish = ".svelte-kit/output/client"
+  publish = ".svelte-kit/netlify"
 
 [[redirects]]
   from = "/*"

@@ -1,8 +1,10 @@
-// Modified progressTracker.ts to handle both server and browser environments
+// src/lib/utils/progressTracker.ts
 import type { ProgressData } from '../types/types';
+import { safeLocalStorage, isBrowser } from './browser';
 
 export class ProgressTracker {
   private static readonly MAX_PATTERN_LENGTH = 6;
+  private static readonly STORAGE_KEY = 'juggleLogProgress';
   
   /**
    * Extract the repeating base of a pattern
@@ -44,6 +46,8 @@ export class ProgressTracker {
    * Format the current date in M-D-YYYY format
    */
   public static getCurrentDate(): string {
+    if (!isBrowser) return '';
+    
     const now = new Date();
     const month = (now.getMonth() + 1).toString();
     const day = now.getDate().toString();
@@ -53,18 +57,14 @@ export class ProgressTracker {
   }
   
   /**
-   * Check if code is running in browser environment
-   */
-  private static isBrowser(): boolean {
-    return typeof window !== 'undefined' && typeof localStorage !== 'undefined';
-  }
-  
-  /**
    * Save progress data to local storage
    */
   public static saveProgress(data: ProgressData): void {
-    if (this.isBrowser()) {
-      localStorage.setItem('juggleLogProgress', JSON.stringify(data));
+    try {
+      const jsonData = JSON.stringify(data);
+      safeLocalStorage.setItem(this.STORAGE_KEY, jsonData);
+    } catch (error) {
+      console.error('Failed to save progress data:', error);
     }
   }
   
@@ -79,21 +79,23 @@ export class ProgressTracker {
       completionDates: {}
     };
     
-    if (!this.isBrowser()) {
-      return defaultData;
-    }
-    
-    const storedData = localStorage.getItem('juggleLogProgress');
-    
-    if (storedData) {
-      try {
+    try {
+      const storedData = safeLocalStorage.getItem(this.STORAGE_KEY);
+      
+      if (storedData) {
         return JSON.parse(storedData) as ProgressData;
-      } catch (e) {
-        console.error('Error parsing stored progress data', e);
-        return defaultData;
       }
+    } catch (error) {
+      console.error('Error loading progress data:', error);
     }
     
     return defaultData;
+  }
+
+  /**
+   * Clear all progress data
+   */
+  public static clearProgress(): void {
+    safeLocalStorage.removeItem(this.STORAGE_KEY);
   }
 }
