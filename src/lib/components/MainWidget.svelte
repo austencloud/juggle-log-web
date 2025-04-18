@@ -239,11 +239,34 @@
 
 	.main-content {
 		display: flex;
-		flex-grow: 1; /* Allow main content to fill remaining space */
+		flex-grow: 1;
 		gap: 1.5rem;
-		/* Adjust height calculation if header height is fixed */
-		height: calc(100vh - 3rem - 4rem); /* Approximate: 100vh - padding - header height */
-		overflow: hidden; /* Prevent main content from causing double scrollbars */
+		height: calc(100vh - 3rem - 4rem);
+		overflow: hidden;
+	}
+
+	@media (min-width: 768px) {
+		.main-content.wide-layout {
+			flex-direction: row;
+			align-items: flex-start;
+		}
+		.main-content.wide-layout .control-panel-wrapper {
+			flex: 0 0 300px;
+			margin-right: var(--spacing-large);
+			margin-bottom: 0;
+		}
+		.main-content.wide-layout .pattern-table-wrapper {
+			flex: 1 1 auto;
+		}
+	}
+
+	.control-panel-wrapper {
+		width: 100%;
+		margin-bottom: var(--spacing-large);
+	}
+
+	.pattern-table-wrapper {
+		width: 100%;
 	}
 
 	/* Default: Narrow Layout (Vertical Stack for main content) */

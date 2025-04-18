@@ -2,12 +2,19 @@
 <script lang="ts">
     import { onMount, onDestroy } from 'svelte';
     
-    export let duration = 4000; // Increased duration
+    export let duration = 6000; // Increased duration to 6 seconds
     
     let canvas: HTMLCanvasElement;
     let ctx: CanvasRenderingContext2D | null;
     let confetti: Particle[] = [];
     let animationId: number;
+
+    // List of available sound files
+    const soundFiles = [
+        'yay.mp3',
+
+    ];
+    let lastSoundIndex = -1; // Keep track of the last played sound
     
     class Particle {
       x: number;
@@ -22,21 +29,23 @@
       gravity: number; // Added gravity
       resistance: number; // Added resistance
       
-      constructor(x: number, y: number) {
+      constructor(x: number, y: number, canvasWidth: number) { // Added canvasWidth
         this.x = x;
         this.y = y;
-        this.radius = Math.random() * 5 + 3; // Slightly larger particles
+        this.radius = Math.random() * 6 + 2; // Slightly larger particles
         this.color = this.getRandomColor();
+        // Wider horizontal velocity based on canvas width
+        const maxHorizontalVelocity = Math.max(15, canvasWidth * 0.02); // Scale with width, min 15
         this.velocity = {
-          x: (Math.random() - 0.5) * 15, // Increased horizontal velocity range
-          y: Math.random() * -15 - 5 // Increased initial upward velocity
+          x: (Math.random() - 0.5) * maxHorizontalVelocity * 2, // Wider range
+          y: Math.random() * -20 - 10 // Stronger initial upward velocity
         };
         this.rotation = Math.random() * 360;
-        this.rotationSpeed = Math.random() * 10 - 5; // Faster rotation
+        this.rotationSpeed = Math.random() * 12 - 6; // Slightly faster rotation
         this.shape = Math.random() > 0.5 ? 'square' : 'circle';
         this.opacity = 1;
-        this.gravity = 0.3; // Stronger gravity
-        this.resistance = 0.98; // Air resistance
+        this.gravity = 0.35; // Slightly stronger gravity
+        this.resistance = 0.97; // Slightly less resistance
       }
       
       getRandomColor(): string {
@@ -81,13 +90,13 @@
         // Rotate
         this.rotation += this.rotationSpeed;
         
-        // Fade out (start fading later)
-        if (this.y > height * 0.2) { // Start fading after falling a bit
-          this.opacity -= 0.015;
+        // Fade out (start fading a bit lower)
+        if (this.y > height * 0.3) { // Start fading lower down
+          this.opacity -= 0.01; // Fade slightly slower
         }
         
-        // Remove if off screen or faded
-        return this.y < height + this.radius * 2 && this.opacity > 0;
+        // Remove if off screen (allow going slightly off sides) or faded
+        return this.y < height + this.radius * 2 && this.x > -this.radius * 2 && this.x < width + this.radius * 2 && this.opacity > 0;
       }
     }
     
@@ -97,11 +106,12 @@
       const { width, height } = canvas;
       confetti = []; // Clear previous confetti
       
-      // Generate more confetti particles from center top
-      const centerX = width / 2;
-      const startY = height * 0.1; // Start slightly lower than top
-      for (let i = 0; i < 300; i++) { // Increased particle count
-        confetti.push(new Particle(centerX, startY));
+      // Generate more confetti particles from across the top edge
+      const startY = -10; // Start slightly above the screen
+      const particleCount = 300; // Increased from 150
+      for (let i = 0; i < particleCount; i++) { // Increased and scaled particle count
+        const startX = Math.random() * width; // Random start X across the width
+        confetti.push(new Particle(startX, startY, width)); // Pass width to constructor
       }
     }
     
@@ -124,6 +134,22 @@
     }
     
     onMount(() => {
+      // Play a random sound effect, avoiding repetition
+      try {
+        let soundIndex;
+        do {
+          soundIndex = Math.floor(Math.random() * soundFiles.length);
+        } while (soundFiles.length > 1 && soundIndex === lastSoundIndex);
+
+        lastSoundIndex = soundIndex;
+        const soundPath = `/sounds/${soundFiles[soundIndex]}`;
+        const audio = new Audio(soundPath);
+        audio.volume = 0.7; // Set volume to 70%
+        audio.play();
+      } catch (error) {
+        console.error('Failed to play confetti sound:', error);
+      }
+
       // Get canvas context
       ctx = canvas.getContext('2d');
       
