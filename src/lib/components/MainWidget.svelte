@@ -3,6 +3,8 @@
 	import { onMount } from 'svelte';
 	import ControlPanel from './ControlPanel/ControlPanel.svelte';
 	import PatternTable from './PatternTable/PatternTable.svelte';
+	import ImportExport from './ui/ImportExport.svelte';
+	import ThemeToggle from './ui/ThemeToggle.svelte';
 
 	let windowWidth: number;
 
@@ -36,6 +38,9 @@
 				<div class="title-section">
 					<h1>Juggle Log</h1>
 					<p class="subtitle">Track your juggling progress</p>
+				</div>
+				<div class="header-actions">
+					<ImportExport />
 				</div>
 			</div>
 		</header>

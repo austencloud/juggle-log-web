@@ -111,32 +111,51 @@ export class PatternGenerator {
 	 */
 	private static filterUniquePatterns(patterns: Set<string>, validThrows: string[]): Set<string> {
 		const uniquePatterns = new Set<string>();
-		// Store canonical representations we've already added to avoid duplicates from different string representations
-		const canonicalsAdded = new Set<string>();
+		const canonicalsAdded = new Set<string>(); // Tracks canonicals added
+        const processedRotations = new Set<string>(); // Tracks all rotations processed to avoid re-checking
 
-		for (const pattern of patterns) {
-			// Get the canonical rotation based on the parsed throws
-			const canonicalRotation = this.getCanonicalRotation(pattern, validThrows);
+		for (const patternStr of patterns) {
+            // Skip if this exact rotation has already been processed as part of a canonical group
+            if (processedRotations.has(patternStr)) {
+                continue;
+            }
 
-			// Skip if this canonical form has already been added
-			if (canonicalsAdded.has(canonicalRotation)) {
-				continue;
-			}
+            const patternThrows = this.parsePattern(patternStr, validThrows);
+            const patternLength = patternThrows.length;
 
-			// Check for repetition based on parsed throws
-			const repeatingBase = this.findRepeatingBase(pattern, validThrows);
+            // Skip invalid/empty patterns
+            if ((patternThrows.join('') !== patternStr && patternLength > 0) || patternLength === 0) {
+                 if (patternLength > 0) {
+                    console.warn(`Skipping pattern "${patternStr}" due to parsing mismatch.`);
+                 }
+                 processedRotations.add(patternStr);
+                 continue;
+            }
+
+			// Check for repetitions of shorter patterns FIRST
+			const repeatingBase = this.findRepeatingBase(patternStr, validThrows);
 			if (repeatingBase) {
 				const baseThrows = this.parsePattern(repeatingBase, validThrows);
-				const patternThrows = this.parsePattern(pattern, validThrows);
-				// Skip if it's a repetition of a shorter sequence of throws
-				if (baseThrows.length < patternThrows.length) {
+				if (baseThrows.length < patternLength) {
+					// It's a repetition, mark all its rotations as processed and skip
+					const allRotStrs = this.getAllRotations(patternStr, validThrows);
+					allRotStrs.forEach(rot => processedRotations.add(rot));
 					continue;
 				}
 			}
 
-			// Add the canonical rotation to our unique set and track it
-			uniquePatterns.add(canonicalRotation);
-			canonicalsAdded.add(canonicalRotation);
+            // If it's not a repetition, find its canonical form
+			const canonicalRotation = this.getCanonicalRotation(patternStr, validThrows);
+
+            // Add the canonical form if it hasn't been added yet
+			if (!canonicalsAdded.has(canonicalRotation)) {
+				uniquePatterns.add(canonicalRotation);
+				canonicalsAdded.add(canonicalRotation);
+			}
+
+            // Mark all rotations of the original pattern as processed
+            const originalRotations = this.getAllRotations(patternStr, validThrows);
+            originalRotations.forEach(rot => processedRotations.add(rot));
 		}
 
 		return uniquePatterns;

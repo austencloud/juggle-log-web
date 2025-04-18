@@ -11,7 +11,7 @@ const createProgressStore = () => {
     const initialData: ProgressData = {
         completedPatterns: [],
         maxCatches: {},
-        completionDates: {}
+        lastUpdatedDates: {} // Renamed from completionDates
     };
 
     const { subscribe, update, set } = writable<ProgressData>(initialData);
@@ -123,15 +123,15 @@ const createProgressStore = () => {
         },
 
         /**
-         * Get completion date for a pattern
+         * Get last updated date for a pattern
          * @param pattern - The pattern to check
          * @returns string date or null
          */
-        getCompletionDate: (pattern: string): string | null => {
+        getLastUpdatedDate: (pattern: string): string | null => { // Renamed from getCompletionDate
             if (!pattern || pattern.trim() === '') return null;
             
             const data = get({ subscribe });
-            return data.completionDates[pattern] || null;
+            return data.lastUpdatedDates[pattern] || null; // Use renamed field
         },
 
         /**
@@ -150,7 +150,7 @@ const createProgressStore = () => {
             const emptyData: ProgressData = {
                 completedPatterns: [],
                 maxCatches: {},
-                completionDates: {}
+                lastUpdatedDates: {} // Use renamed field
             };
 
             saveToStorage(emptyData);
@@ -192,7 +192,7 @@ const createProgressStore = () => {
                 // Validate data structure
                 if (!parsedData.completedPatterns || !Array.isArray(parsedData.completedPatterns) ||
                     !parsedData.maxCatches || typeof parsedData.maxCatches !== 'object' ||
-                    !parsedData.completionDates || typeof parsedData.completionDates !== 'object') {
+                    !parsedData.lastUpdatedDates || typeof parsedData.lastUpdatedDates !== 'object') { // Use renamed field
                     throw new Error('Invalid data structure');
                 }
                 
@@ -222,28 +222,36 @@ const createProgressStore = () => {
  * @param catches - The number of catches
  */
 function updatePatternData(data: ProgressData, pattern: string, catches: number): void {
-    // Update max catches
-    data.maxCatches[pattern] = catches;
+    // Update max catches if the new value is higher or if it doesn't exist yet
+    // Or allow setting to 0
+    if (catches >= (data.maxCatches[pattern] || 0) || catches === 0) {
+        data.maxCatches[pattern] = catches;
+        // Always update the last updated date when max catches changes
+        data.lastUpdatedDates[pattern] = ProgressTracker.getCurrentDate();
+    } else {
+        // If the new catch count is lower than the existing max (and not 0), don't update anything
+        // Optionally show a message or log this
+        console.log(`New catch count (${catches}) for ${pattern} is lower than existing max (${data.maxCatches[pattern]}). Not updating.`);
+        return; // Exit early, no changes needed
+    }
 
-    // Update completion status
-    if (catches >= 100) {
+    // Update completion status based on the new maxCatches value
+    if (data.maxCatches[pattern] >= 100) {
         if (!data.completedPatterns.includes(pattern)) {
             data.completedPatterns.push(pattern);
         }
-        // Set completion date if not already set
-        if (!data.completionDates[pattern]) {
-            data.completionDates[pattern] = ProgressTracker.getCurrentDate();
-        }
     } else {
-        // Remove from completed patterns
+        // Remove from completed patterns if below 100
         data.completedPatterns = data.completedPatterns.filter(
             (p) => p !== pattern
         );
+    }
 
-        // Remove completion date if catches is 0
-        if (catches === 0 && data.completionDates[pattern]) {
-            delete data.completionDates[pattern];
-        }
+    // If catches are set to 0, also remove the date entry
+    if (catches === 0) {
+        delete data.lastUpdatedDates[pattern];
+        // Also ensure it's removed from completedPatterns if it was there
+        data.completedPatterns = data.completedPatterns.filter(p => p !== pattern);
     }
 }
 
@@ -256,12 +264,12 @@ export const getPatternDataList = (patterns: string[]) => {
         return patterns.map((pattern) => {
             const maxCatches = $progressStore.maxCatches[pattern] || 0;
             const isCompleted = maxCatches >= 100;
-            const dateCompleted = $progressStore.completionDates[pattern] || null;
+            const lastUpdated = $progressStore.lastUpdatedDates[pattern] || null; // Use renamed field
 
             return {
                 pattern,
                 maxCatches,
-                dateCompleted,
+                lastUpdated, // Use renamed field
                 isCompleted
             } as PatternData;
         });

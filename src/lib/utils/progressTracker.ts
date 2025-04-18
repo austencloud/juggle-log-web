@@ -72,21 +72,45 @@ export class ProgressTracker {
    * Load progress data from local storage
    */
   public static loadProgress(): ProgressData {
-    // Default empty data
+    // Default empty data with the new field name
     const defaultData: ProgressData = {
       completedPatterns: [],
       maxCatches: {},
-      completionDates: {}
+      lastUpdatedDates: {} // Use new field name
     };
     
     try {
       const storedData = safeLocalStorage.getItem(this.STORAGE_KEY);
       
       if (storedData) {
-        return JSON.parse(storedData) as ProgressData;
+        let parsedData = JSON.parse(storedData) as ProgressData & { completionDates?: Record<string, string> }; // Allow checking for old key
+
+        // --- Migration Logic --- 
+        // If the new key doesn't exist but the old one does, migrate the data
+        if (!parsedData.lastUpdatedDates && parsedData.completionDates) {
+          console.log("Migrating completionDates to lastUpdatedDates...");
+          parsedData.lastUpdatedDates = parsedData.completionDates;
+          delete parsedData.completionDates; // Remove the old key
+          // Optionally re-save immediately after migration
+          // this.saveProgress(parsedData);
+        }
+        // Ensure the target field exists even if migration didn't happen (e.g., very old/corrupt data)
+        if (!parsedData.lastUpdatedDates) {
+            parsedData.lastUpdatedDates = {};
+        }
+        // --- End Migration Logic ---
+
+        // Ensure all expected fields exist, falling back to defaults if necessary
+        return {
+          completedPatterns: parsedData.completedPatterns || [],
+          maxCatches: parsedData.maxCatches || {},
+          lastUpdatedDates: parsedData.lastUpdatedDates // Already ensured to exist
+        };
       }
     } catch (error) {
-      console.error('Error loading progress data:', error);
+      console.error('Error loading or migrating progress data:', error);
+      // Clear potentially corrupted data on parse error?
+      // this.clearProgress(); 
     }
     
     return defaultData;

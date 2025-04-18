@@ -25,23 +25,60 @@ export const sortConfig = writable({
 	sortOrder: SortOrder.Ascending
 });
 
-// Modified part of patternStore.ts
 // Derived store for pattern data with metadata (including sort)
 export const patternDataList = derived(
-	[generatedPatterns, sortConfig, progressStore],
-	([$generatedPatterns, $sortConfig, $progressStore]) => {
-		// Create array of pattern data objects
-		const patternData = $generatedPatterns.map((pattern) => {
-			const maxCatches = $progressStore.maxCatches[pattern] || 0;
-			const isCompleted = maxCatches >= 100;
-			const dateCompleted = $progressStore.completionDates[pattern] || null;
+	[generatedPatterns, sortConfig, progressStore, patternLength], // Add patternLength dependency
+	([$generatedPatterns, $sortConfig, $progressStore, $patternLength]) => {
+		const isEvenLength = $patternLength % 2 === 0;
 
-			return {
-				pattern,
-				maxCatches,
-				dateCompleted,
-				isCompleted
-			} as PatternData;
+		// Create array of pattern data objects
+		const patternData: PatternData[] = $generatedPatterns.flatMap((pattern) => {
+			if (isEvenLength) {
+				// Even length: Create two entries, one for Right, one for Left
+				const storageKeyR = pattern + '_R';
+				const storageKeyL = pattern + '_L';
+
+				const maxCatchesR = $progressStore.maxCatches[storageKeyR] || 0;
+				const isCompletedR = maxCatchesR >= 100;
+				const lastUpdatedR = $progressStore.lastUpdatedDates[storageKeyR] || null;
+
+				const maxCatchesL = $progressStore.maxCatches[storageKeyL] || 0;
+				const isCompletedL = maxCatchesL >= 100;
+				const lastUpdatedL = $progressStore.lastUpdatedDates[storageKeyL] || null;
+
+				return [
+					{
+						pattern,
+						storageKey: storageKeyR,
+						maxCatches: maxCatchesR,
+						lastUpdated: lastUpdatedR,
+						isCompleted: isCompletedR
+					} as PatternData,
+					{
+						pattern,
+						storageKey: storageKeyL,
+						maxCatches: maxCatchesL,
+						lastUpdated: lastUpdatedL,
+						isCompleted: isCompletedL
+					} as PatternData
+				];
+			} else {
+				// Odd length: Create single entry
+				const storageKey = pattern;
+				const maxCatches = $progressStore.maxCatches[storageKey] || 0;
+				const isCompleted = maxCatches >= 100;
+				const lastUpdated = $progressStore.lastUpdatedDates[storageKey] || null;
+
+				return [
+					{
+						pattern,
+						storageKey,
+						maxCatches,
+						lastUpdated,
+						isCompleted
+					} as PatternData
+				];
+			}
 		});
 
 		// Sort data based on current sort configuration
@@ -50,26 +87,43 @@ export const patternDataList = derived(
 
 			switch ($sortConfig.sortType) {
 				case SortType.Pattern:
+					// Sort primarily by pattern string, then by storageKey to keep R/L together
 					comparison = a.pattern.localeCompare(b.pattern);
+					if (comparison === 0) {
+						comparison = a.storageKey.localeCompare(b.storageKey); // _R before _L
+					}
 					break;
 
 				case SortType.MaxCatches:
 					comparison = a.maxCatches - b.maxCatches;
+					// Secondary sort by pattern if catches are equal
+					if (comparison === 0) {
+						comparison = a.pattern.localeCompare(b.pattern);
+						if (comparison === 0) {
+							comparison = a.storageKey.localeCompare(b.storageKey);
+						}
+					}
 					break;
 
 				case SortType.Date:
 					// Handle null dates (put them at the end)
-					if (a.dateCompleted === null && b.dateCompleted === null) {
+					if (a.lastUpdated === null && b.lastUpdated === null) {
 						comparison = 0;
-					} else if (a.dateCompleted === null) {
+					} else if (a.lastUpdated === null) {
 						comparison = 1;
-					} else if (b.dateCompleted === null) {
+					} else if (b.lastUpdated === null) {
 						comparison = -1;
 					} else {
-						// Parse dates for comparison
-						const dateA = new Date(a.dateCompleted.replace(/-/g, '/'));
-						const dateB = new Date(b.dateCompleted.replace(/-/g, '/'));
+						const dateA = new Date(a.lastUpdated.replace(/-/g, '/'));
+						const dateB = new Date(b.lastUpdated.replace(/-/g, '/'));
 						comparison = dateA.getTime() - dateB.getTime();
+					}
+					// Secondary sort by pattern if dates are equal
+					if (comparison === 0) {
+						comparison = a.pattern.localeCompare(b.pattern);
+						if (comparison === 0) {
+							comparison = a.storageKey.localeCompare(b.storageKey);
+						}
 					}
 					break;
 			}

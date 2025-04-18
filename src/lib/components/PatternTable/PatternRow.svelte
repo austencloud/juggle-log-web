@@ -53,8 +53,8 @@
 		wasCompleted = patternData.isCompleted;
 	}
 
-	// Generate a unique ID for this row's elements
-	const rowId = `pattern-row-${patternData.pattern.replace(/[^a-zA-Z0-9]/g, '-')}`;
+	// Generate a unique ID for this row's elements using storageKey
+	const rowId = `pattern-row-${patternData.storageKey.replace(/[^a-zA-Z0-9]/g, '-')}`;
 </script>
 
 {#if showCompletionConfetti}
@@ -67,14 +67,15 @@
 	class:completed-row={patternData.isCompleted}
 	class:just-completed={justCompleted}
 	aria-rowindex={index + 1}
-	data-pattern={patternData.pattern}
+	data-pattern={patternData.pattern} 
+	data-storage-key={patternData.storageKey} 
 	data-completed={patternData.isCompleted ? 'true' : 'false'}
 	tabindex="0"
 	aria-label={`Pattern ${patternData.pattern}, ${patternData.isCompleted ? 'Completed' : 'Not completed'}, Maximum catches: ${patternData.maxCatches}`}
 >
 	<td class="pattern-name" role="cell">
 		<div class="pattern-display" aria-hidden="false">
-			<span class="pattern-text">{patternData.pattern}</span>
+			<span class="pattern-text">{patternData.pattern}</span> <!-- Display pattern -->
 			{#if justCompleted}
 				<div
 					class="completion-badge"
@@ -101,25 +102,26 @@
 	</td>
 	<td class="max-catches" role="cell">
 		<PatternSpinBox
-			pattern={patternData.pattern}
+			storageKey={patternData.storageKey} 
+			displayPattern={patternData.pattern} 
 			labelId={`${rowId}-catches-label`}
 			descriptionId={`${rowId}-catches-description`}
 		/>
 	</td>
-	<td class="completion-date" role="cell">
-		{#if patternData.dateCompleted}
-			<span aria-label={`Completed on ${patternData.dateCompleted}`}>
-				{patternData.dateCompleted}
+	<td class="last-updated-date" role="cell">
+		{#if patternData.lastUpdated}
+			<span aria-label={`Last updated on ${patternData.lastUpdated}`}>
+				{patternData.lastUpdated}
 			</span>
 		{:else}
-			<span aria-label="Not completed yet" class="not-completed">—</span>
+			<span aria-label="Not updated yet" class="not-updated">—</span>
 		{/if}
 	</td>
 </tr>
 
 <!-- Invisible descriptions for screen readers -->
 <div class="sr-only" aria-hidden="true">
-	<span id={`${rowId}-catches-label`}>Maximum catches for pattern {patternData.pattern}</span>
+	<span id={`${rowId}-catches-label`}>Maximum catches for pattern {patternData.pattern}</span> <!-- Use display pattern -->
 	<span id={`${rowId}-catches-description`}>
 		Enter the maximum number of consecutive catches you've achieved with this pattern. When you
 		reach 100 catches, the pattern will be marked as mastered.
@@ -201,12 +203,12 @@
 		animation: scaleIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
 	}
 
-	.completion-date {
+	.last-updated-date {
 		text-align: center;
 		color: var(--text-light);
 	}
 
-	.not-completed {
+	.not-updated {
 		opacity: 0.5;
 	}
 

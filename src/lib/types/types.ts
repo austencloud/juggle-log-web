@@ -23,7 +23,7 @@ export interface ProgressData {
 	/** Map of pattern string to number of catches achieved */
 	maxCatches: Record<string, number>;
 	/** Map of pattern string to date completed */
-	completionDates: Record<string, string>;
+	lastUpdatedDates: Record<string, string>;
 }
 
 /**
@@ -32,10 +32,12 @@ export interface ProgressData {
 export interface PatternData {
 	/** The pattern string (sequence of throw codes) */
 	pattern: string;
+    /** The key used for storing/retrieving progress (e.g., "DS" or "DS_R") */
+    storageKey: string;
 	/** The maximum number of catches achieved */
 	maxCatches: number;
 	/** The date the pattern was completed, or null if not completed */
-	dateCompleted: string | null;
+	lastUpdated: string | null;
 	/** Whether the pattern is considered completed (max catches >= 100) */
 	isCompleted: boolean;
 }
@@ -124,7 +126,7 @@ export const THROW_BUTTONS: ThrowType[] = [
 	{
 		code: 'O',
 		name: 'Over the top',
-		description: 'Throw over the opposite shoulder',
+		description: 'Throw a single on with an outside throw',
 		difficulty: 3
 	},
 	{
@@ -142,7 +144,13 @@ export const THROW_BUTTONS: ThrowType[] = [
 	{
 		code: 'Uo',
 		name: 'Under opposite leg',
-		description: 'Throw under the opposite leg',
+		description: 'Throw under the opposite side leg',
+		difficulty: 4
+	},
+	{
+		code: 'Cd',
+		name: 'Circus Double',
+		description: 'Double thrown at single height',
 		difficulty: 4
 	}
 ];

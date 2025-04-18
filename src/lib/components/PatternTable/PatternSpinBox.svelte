@@ -3,21 +3,22 @@
   import { progressStore } from '$lib/stores/progressStore';
   import { onMount } from 'svelte';
   
-  export let pattern: string;
+  export let storageKey: string; // Changed from pattern
+  export let displayPattern: string; // Added for display
   export let labelId: string = '';
   export let descriptionId: string = '';
   
-  // Get the initial value from the progress store
-  let catches = progressStore.getMaxCatches(pattern);
+  // Get the initial value from the progress store using storageKey
+  let catches = progressStore.getMaxCatches(storageKey);
   
   // Define min and max values for catch counter
   const MIN_CATCHES = 0;
-  const MAX_CATCHES = 100;
+  const MAX_CATCHES = 999; // Increased max value
   
-  // Update progress when value changes
+  // Update progress when value changes, using storageKey
   function updateCatches(): void {
     catches = Math.max(MIN_CATCHES, Math.min(catches, MAX_CATCHES));
-    progressStore.setMaxCatches(pattern, catches);
+    progressStore.setMaxCatches(storageKey, catches);
   }
   
   // Increment catches
@@ -81,8 +82,8 @@
     }
   }
 
-  // Generate unique IDs if not provided
-  let inputId = `spinbox-${pattern.replace(/[^a-zA-Z0-9]/g, '-')}`;
+  // Generate unique IDs using storageKey
+  let inputId = `spinbox-${storageKey.replace(/[^a-zA-Z0-9]/g, '-')}`;
   let decrementId = `${inputId}-decrement`;
   let incrementId = `${inputId}-increment`;
 
@@ -105,7 +106,7 @@
     id={decrementId}
     class="decrement" 
     on:click={decrement} 
-    aria-label={`Decrease catches for pattern ${pattern}`}
+    aria-label={`Decrease catches for pattern ${displayPattern}`} 
     aria-controls={inputId}
     tabindex="0"
     disabled={catches <= MIN_CATCHES}
@@ -123,7 +124,7 @@
     on:change={updateCatches}
     on:input={handleInput}
     on:keydown={handleKeydown}
-    aria-label={`Maximum catches for pattern ${pattern}: ${catches}`}
+    aria-label={`Maximum catches for pattern ${displayPattern}: ${catches}`}
     aria-valuemin={MIN_CATCHES}
     aria-valuemax={MAX_CATCHES}
     aria-valuenow={catches}
@@ -135,7 +136,7 @@
     id={incrementId}
     class="increment" 
     on:click={increment} 
-    aria-label={`Increase catches for pattern ${pattern}`}
+    aria-label={`Increase catches for pattern ${displayPattern}`} 
     aria-controls={inputId}
     tabindex="0"
     disabled={catches >= MAX_CATCHES}
