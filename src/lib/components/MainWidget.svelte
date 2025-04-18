@@ -9,24 +9,19 @@
 	let innerWidth: number = 0;
 	let innerHeight: number = 0;
 	let isWideLayout: boolean = false;
-	// let showConfetti = false; // Replaced with an array
 	let confettiInstances: number[] = []; // Array to track confetti instances
 	let confettiCounter = 0; // Counter for unique keys
 
-	// Threshold for determining wide layout (width > height)
-	const WIDE_LAYOUT_THRESHOLD = 0.8;
+	// Threshold for determining wide layout (e.g., 768px)
+	const WIDE_LAYOUT_WIDTH_THRESHOLD = 1200;
 
 	function updateLayout() {
 		if (isBrowser) {
-			isWideLayout = innerWidth / innerHeight > WIDE_LAYOUT_THRESHOLD;
+			isWideLayout = innerWidth >= WIDE_LAYOUT_WIDTH_THRESHOLD; // New width-based logic
 		}
 	}
 
 	function triggerConfetti() {
-		// showConfetti = false; // Removed reset logic
-		// setTimeout(() => {
-		// 	showConfetti = true;
-		// }, 0);
 		confettiInstances = [...confettiInstances, confettiCounter++];
 		// Optional: Clean up the array after a delay slightly longer than confetti duration
 		// This prevents the array from growing indefinitely if the user clicks many times.

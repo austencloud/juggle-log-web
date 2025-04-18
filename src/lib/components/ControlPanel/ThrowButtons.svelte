@@ -42,10 +42,11 @@
 
 <style>
 	.throw-buttons-container {
-		display: grid;
-		grid-template-columns: repeat(4, 1fr);
+		display: flex; /* Changed from grid */
+		flex-wrap: wrap; /* Allow buttons to wrap */
 		gap: 0.5rem;
 		margin-bottom: 1rem;
+		justify-content: center; /* Center buttons */
 	}
 
 	.throw-button {
@@ -53,12 +54,16 @@
 		background-color: white;
 		border: 2px solid var(--border-color);
 		border-radius: var(--border-radius-sm);
-		padding: 0.5rem;
+		padding: 0.5rem 0.75rem; /* Adjusted padding */
 		font-size: 1rem;
 		cursor: pointer;
 		transition: all 0.2s ease;
 		font-weight: bold;
 		overflow: hidden;
+		/* flex-grow: 1; Removed */
+		flex-basis: 60px; /* Set a base size */
+		min-width: 50px; /* Ensure a minimum width */
+		text-align: center; /* Center text */
 	}
 
 	.button-content {
@@ -111,7 +116,9 @@
 	@media (min-width: 768px) {
 		.throw-button {
 			font-size: 1.2rem;
-			padding: 0.75rem;
+			padding: 0.75rem 1rem; /* Adjusted padding */
+			min-width: 60px; /* Slightly larger min-width for larger screens */
+			flex-basis: 70px; /* Larger base size for larger screens */
 		}
 	}
 </style>
