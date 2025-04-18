@@ -2,7 +2,4 @@
   command = "npm install --legacy-peer-deps && npx svelte-kit sync && npm run build"
   publish = ".svelte-kit/netlify"
 
-[[redirects]]
-  from = "/*"
-  to = "/index.html"
-  status = 200
+# Removed redirects section

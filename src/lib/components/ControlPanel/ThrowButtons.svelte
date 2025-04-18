@@ -29,7 +29,6 @@
 			class:selected={selectedSet.has(throwButton.code)}
 			on:click={() => handleThrowButtonClick(throwButton.code)}
 			title={throwButton.name}
-			in:fly={{ y: 20, duration: 300, delay: 100 + i * 50 }}
 		>
 			<span class="button-content">
 				{throwButton.code}
@@ -87,6 +86,8 @@
 		border-color: var(--text-light);
 		transform: translateY(-2px);
 		box-shadow: var(--shadow-sm);
+		/* white text */ 
+		color: var(--text-light);
 	}
 
 	.throw-button.selected {
