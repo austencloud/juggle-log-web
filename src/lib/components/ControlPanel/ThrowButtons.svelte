@@ -33,7 +33,7 @@
 			<span class="button-content">
 				{throwButton.code}
 				{#if selectedSet.has(throwButton.code)}
-					<span class="selection-indicator" in:scale={{ duration: 300, easing: elasticOut }}></span>
+					<!-- Removed selection indicator span -->
 				{/if}
 			</span>
 		</button>
@@ -69,17 +69,7 @@
 		align-items: center;
 	}
 
-	.selection-indicator {
-		position: absolute;
-		top: 50%;
-		left: 50%;
-		transform: translate(-50%, -50%);
-		width: 6px;
-		height: 6px;
-		border-radius: 50%;
-		background-color: white;
-		margin-left: 1.5rem;
-	}
+	/* Removed .selection-indicator style */
 
 	.throw-button:hover {
 		background-color: var(--background-color);

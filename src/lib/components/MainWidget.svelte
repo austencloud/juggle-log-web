@@ -3,60 +3,57 @@
 	import { onMount } from 'svelte';
 	import ControlPanel from './ControlPanel/ControlPanel.svelte';
 	import PatternTable from './PatternTable/PatternTable.svelte';
-	import ImportExport from './ui/ImportExport.svelte';
-	import ThemeToggle from './ui/ThemeToggle.svelte';
+	// Removed ImportExport import
+	import { isBrowser } from '$lib/utils/browser';
 
-	let windowWidth: number;
+	let innerWidth: number = 0;
+	let innerHeight: number = 0;
+	let isWideLayout: boolean = false;
 
-	function handleResize() {
-		windowWidth = window.innerWidth;
+	// Threshold for determining wide layout (width > height)
+	const WIDE_LAYOUT_THRESHOLD = 0.8;
+
+	function updateLayout() {
+		if (isBrowser) {
+			isWideLayout = innerWidth / innerHeight > WIDE_LAYOUT_THRESHOLD;
+		}
 	}
 
 	onMount(() => {
-		windowWidth = window.innerWidth;
-		window.addEventListener('resize', handleResize);
-
-		// Set theme color meta tag programmatically
-		const metaThemeColor = document.querySelector('meta[name="theme-color"]');
-		if (metaThemeColor) {
-			metaThemeColor.setAttribute('content', '#121212');
+		if (isBrowser) {
+			innerWidth = window.innerWidth;
+			innerHeight = window.innerHeight;
+			updateLayout();
 		}
-
-		return () => {
-			window.removeEventListener('resize', handleResize);
-		};
 	});
+
+	// Update layout on resize
+	$: if (isBrowser && innerWidth && innerHeight) {
+		updateLayout();
+	}
 </script>
 
-<svelte:window on:resize={handleResize} />
+<!-- Bind window dimensions -->
+<svelte:window bind:innerWidth bind:innerHeight />
 
-<!-- 1) Wrap .app-container in a .outer-container -->
-<div class="outer-container">
-	<div class="app-container">
-		<header>
-			<div class="header-content">
-				<div class="title-section">
-					<h1>Juggle Log</h1>
-					<p class="subtitle">Track your juggling progress</p>
-				</div>
-				<div class="header-actions">
-					<ImportExport />
-				</div>
-			</div>
-		</header>
+<div class="main-widget" class:wide-layout={isWideLayout} class:narrow-layout={!isWideLayout}> <!-- Removed themeStore class binding -->
+	<header class="widget-header">
+		<div class="header-content">
+			<h1 class="title">Juggle Log</h1>
+		</div>
+		<div class="header-controls">
+			<!-- Removed ThemeToggle component -->
+		</div>
+	</header>
 
-		<main>
-			<section class="table-section">
-				<PatternTable />
-			</section>
-			<section class="control-section">
-				<ControlPanel />
-			</section>
-		</main>
-
-		<footer>
-			<p>JuggleLog &copy; {new Date().getFullYear()}</p>
-		</footer>
+	<div class="main-content" class:wide-layout={isWideLayout} class:narrow-layout={!isWideLayout}>
+		<div class="control-panel-wrapper">
+			<ControlPanel />
+			<!-- Removed ImportExport component -->
+		</div>
+		<div class="pattern-table-wrapper">
+			<PatternTable />
+		</div>
 	</div>
 </div>
 
@@ -184,28 +181,10 @@
 		border-bottom: 1px solid var(--border-color);
 	}
 
-	header {
-		margin-bottom: 2rem;
-	}
-
-	h1 {
-		color: var(--header-color);
-		margin: 0;
-		font-size: 2rem;
-	}
-
 	.subtitle {
 		color: var(--text-light);
 		margin: 0.25rem 0 0 0;
 		font-size: 1rem;
-	}
-
-	main {
-		display: flex;
-		flex-direction: column;
-		gap: 2rem;
-		padding: var(--spacing-lg);
-		flex-grow: 1;
 	}
 
 	.table-section {
@@ -216,22 +195,7 @@
 		order: 1;
 	}
 
-	footer {
-		margin-top: auto;
-		padding: var(--spacing-md) var(--spacing-lg);
-		text-align: center;
-		color: var(--text-light);
-		font-size: 0.9rem;
-		border-top: 1px solid var(--border-color);
-		background-color: var(--card-background);
-	}
-
 	@media (min-width: 1024px) {
-		main {
-			flex-direction: row;
-			align-items: flex-start;
-		}
-
 		.table-section {
 			flex: 3;
 			order: 1;
@@ -244,12 +208,113 @@
 			top: 2rem;
 		}
 
-		h1 {
-			font-size: 2.5rem;
-		}
-
 		.subtitle {
 			font-size: 1.2rem;
 		}
+	}
+
+	.main-widget {
+		display: flex;
+		flex-direction: column; /* Stack header and main content */
+		gap: 1.5rem;
+		padding: 1.5rem;
+		min-height: 100vh; /* Use min-height for flexibility */
+		box-sizing: border-box;
+		max-width: 1400px; /* Limit maximum width */
+		margin-left: auto;  /* Center the widget horizontally */
+		margin-right: auto; /* Center the widget horizontally */
+	}
+
+	.widget-header {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		padding-bottom: 1rem;
+		border-bottom: 1px solid var(--border-color);
+		/* Optional: Add a subtle gradient background */
+		/* background: linear-gradient(to right, var(--primary-color), var(--primary-dark)); */
+		/* color: white; */
+	}
+
+	.header-content .title {
+		font-size: var(--font-size-xl);
+		font-weight: 600; /* Semi-bold */
+		margin: 0;
+		color: var(--header-color);
+	}
+
+
+
+
+
+	.main-content {
+		display: flex;
+		flex-grow: 1; /* Allow main content to fill remaining space */
+		gap: 1.5rem;
+		/* Adjust height calculation if header height is fixed */
+		height: calc(100vh - 3rem - 4rem); /* Approximate: 100vh - padding - header height */
+		overflow: hidden; /* Prevent main content from causing double scrollbars */
+	}
+
+	/* Default: Narrow Layout (Vertical Stack for main content) */
+	.main-content.narrow-layout {
+		flex-direction: column;
+		height: auto; /* Allow content to determine height */
+		overflow: visible; /* Reset overflow */
+	}
+
+	.narrow-layout .control-panel-wrapper {
+		width: 100%;
+		margin-bottom: 0; /* Gap is handled by main-content */
+		order: 1;
+		height: auto; /* Reset height */
+	}
+
+	.narrow-layout .pattern-table-wrapper {
+		width: 100%;
+		flex-grow: 1;
+		overflow-y: auto;
+		order: 2;
+		height: auto; /* Reset height */
+	}
+
+	/* Wide Layout (Side-by-Side for main content) */
+	.main-content.wide-layout {
+		flex-direction: row;
+	}
+
+	.wide-layout .control-panel-wrapper {
+		width: 350px;
+		flex-shrink: 0;
+		overflow-y: auto;
+		height: 100%; /* Fill the height of main-content */
+		order: 2;
+		margin-bottom: 0; /* Gap handled by main-content */
+	}
+
+	.wide-layout .pattern-table-wrapper {
+		flex-grow: 1;
+		overflow-y: auto;
+		height: 100%; /* Fill the height of main-content */
+		order: 1;
+	}
+
+	/* Responsive adjustments if needed */
+	@media (max-width: 768px) {
+		.main-widget {
+			padding: 1rem;
+			gap: 1rem;
+			min-height: calc(100vh - 2rem);
+		}
+
+		.wide-layout .control-panel-wrapper,
+		.wide-layout .pattern-table-wrapper {
+			height: calc(100vh - 2rem);
+		}
+	}
+
+	.control-panel-wrapper {
+		display: flex; /* Add flex display */
+		flex-direction: column; /* Stack items vertically */
 	}
 </style>
