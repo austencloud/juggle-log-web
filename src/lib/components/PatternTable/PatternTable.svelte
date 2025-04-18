@@ -42,13 +42,13 @@
 
 <div class="pattern-table-container">
 	{#if $patternDataList === undefined || $patternDataList.length === 0}
-		<h2>Juggling Patterns</h2>
+		<h2>Patterns</h2>
 		<div class="empty-state">
 			<p>Select throw types and pattern length to generate patterns</p>
 		</div>
 	{:else if $patternLength % 2 !== 0}
 		<!-- ODD LENGTH: Render single table -->
-		<h2>Juggling Patterns</h2>
+		<h2>Patterns</h2>
 		<div class="table-wrapper">
 			<table>
 				<thead>

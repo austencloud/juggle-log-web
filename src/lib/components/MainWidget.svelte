@@ -3,12 +3,15 @@
 	import { onMount } from 'svelte';
 	import ControlPanel from './ControlPanel/ControlPanel.svelte';
 	import PatternTable from './PatternTable/PatternTable.svelte';
-	// Removed ImportExport import
+	import Confetti from './ui/Confetti.svelte'; // Import Confetti
 	import { isBrowser } from '$lib/utils/browser';
 
 	let innerWidth: number = 0;
 	let innerHeight: number = 0;
 	let isWideLayout: boolean = false;
+	// let showConfetti = false; // Replaced with an array
+	let confettiInstances: number[] = []; // Array to track confetti instances
+	let confettiCounter = 0; // Counter for unique keys
 
 	// Threshold for determining wide layout (width > height)
 	const WIDE_LAYOUT_THRESHOLD = 0.8;
@@ -17,6 +20,20 @@
 		if (isBrowser) {
 			isWideLayout = innerWidth / innerHeight > WIDE_LAYOUT_THRESHOLD;
 		}
+	}
+
+	function triggerConfetti() {
+		// showConfetti = false; // Removed reset logic
+		// setTimeout(() => {
+		// 	showConfetti = true;
+		// }, 0);
+		confettiInstances = [...confettiInstances, confettiCounter++];
+		// Optional: Clean up the array after a delay slightly longer than confetti duration
+		// This prevents the array from growing indefinitely if the user clicks many times.
+		const instanceToRemove = confettiCounter - 1;
+		setTimeout(() => {
+			confettiInstances = confettiInstances.filter(id => id !== instanceToRemove);
+		}, 5000); // 5 seconds, slightly longer than confetti duration (4s)
 	}
 
 	onMount(() => {
@@ -36,10 +53,16 @@
 <!-- Bind window dimensions -->
 <svelte:window bind:innerWidth bind:innerHeight />
 
+{#each confettiInstances as instanceId (instanceId)}
+	<Confetti />
+{/each}
+
 <div class="main-widget" class:wide-layout={isWideLayout} class:narrow-layout={!isWideLayout}> <!-- Removed themeStore class binding -->
 	<header class="widget-header">
 		<div class="header-content">
-			<h1 class="title">Juggle Log</h1>
+			<!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
+			<!-- svelte-ignore a11y-click-events-have-key-events -->
+			<h1 class="title" on:click={triggerConfetti}>Juggle Log</h1>
 		</div>
 		<div class="header-controls">
 			<!-- Removed ThemeToggle component -->
@@ -149,70 +172,9 @@
 
 	/*
 		==============================
-		Layout Centering
-		==============================
-	*/
-
-	/* 2) The wrapper that centers and limits width */
-	.outer-container {
-		max-width: 1200px;    /* Or 1000px, etc. for your preferred width */
-		margin: 0 auto;       /* This centers horizontally */
-		padding: 0 var(--spacing-lg); /* Optional horizontal padding */
-	}
-
-	/*
-		==============================
 		Main app container
 		==============================
 	*/
-	.app-container {
-		background-color: var(--background-color);
-		color: var(--text-color);
-		min-height: 100vh; 
-		display: flex;
-		flex-direction: column;
-	}
-
-	.header-content {
-		display: flex;
-		justify-content: space-between;
-		align-items: center;
-		padding: var(--spacing-md) var(--spacing-lg);
-		border-bottom: 1px solid var(--border-color);
-	}
-
-	.subtitle {
-		color: var(--text-light);
-		margin: 0.25rem 0 0 0;
-		font-size: 1rem;
-	}
-
-	.table-section {
-		order: 2;
-	}
-
-	.control-section {
-		order: 1;
-	}
-
-	@media (min-width: 1024px) {
-		.table-section {
-			flex: 3;
-			order: 1;
-		}
-
-		.control-section {
-			flex: 2;
-			order: 2;
-			position: sticky;
-			top: 2rem;
-		}
-
-		.subtitle {
-			font-size: 1.2rem;
-		}
-	}
-
 	.main-widget {
 		display: flex;
 		flex-direction: column; /* Stack header and main content */
@@ -227,25 +189,53 @@
 
 	.widget-header {
 		display: flex;
-		justify-content: space-between;
+		justify-content: center; /* Center header content */
 		align-items: center;
-		padding-bottom: 1rem;
+		padding-bottom: 2rem; /* Increased padding */
 		border-bottom: 1px solid var(--border-color);
-		/* Optional: Add a subtle gradient background */
-		/* background: linear-gradient(to right, var(--primary-color), var(--primary-dark)); */
-		/* color: white; */
+		text-align: center; /* Ensure text within is centered */
+		min-height: 8rem; /* Keep increased min-height */
+	}
+
+	@keyframes gradient-animation {
+		0% { background-position: 0% 50%; }
+		50% { background-position: 100% 50%; }
+		100% { background-position: 0% 50%; }
 	}
 
 	.header-content .title {
-		font-size: var(--font-size-xl);
-		font-weight: 600; /* Semi-bold */
+		font-size: 2.8rem; /* Slightly reduced font size */
+		font-weight: 700; /* Bolder */
 		margin: 0;
-		color: var(--header-color);
+		line-height: 1.2; /* Ensure sufficient line height */
+		padding-bottom: 0.2rem; /* Add small padding for descenders */
+		/* Apply colorful gradient */
+		background: linear-gradient(45deg, #ff6b6b, #feca57, #48dbfb, #ff9ff3, #ff6b6b); /* Added repeat color for smooth loop */
+		-webkit-background-clip: text;
+		background-clip: text;
+		color: transparent; /* Make original text transparent */
+		/* Updated transition to include transform on active */
+		transition: transform 0.3s ease-out, filter 0.3s ease-out, transform 0.1s ease-in-out;
+		cursor: pointer; /* Change cursor to pointer */
+		background-size: 200% 200%; /* Make gradient larger than text */
+		animation: gradient-animation 5s ease infinite; /* Apply animation */
+		user-select: none; /* Prevent text selection */
+		-webkit-user-select: none; /* For Safari */
+		-moz-user-select: none; /* For Firefox */
+		-ms-user-select: none; /* For IE/Edge */
 	}
 
+	.header-content .title:hover {
+		transform: scale(1.05); /* Slightly scale up on hover */
+		filter: brightness(1.2); /* Make colors brighter on hover */
+		animation-play-state: paused; /* Pause animation on hover */
+	}
 
-
-
+	/* Add active state for click feedback */
+	.header-content .title:active {
+		transform: scale(0.98); /* Slightly shrink when clicked */
+		filter: brightness(1.1);
+	}
 
 	.main-content {
 		display: flex;

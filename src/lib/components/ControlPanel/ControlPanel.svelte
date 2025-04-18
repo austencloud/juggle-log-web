@@ -9,15 +9,15 @@
 </script>
 
 <div class="control-panel">
-	<h2>Juggling Controls</h2>
+
 
 	<section class="throw-buttons-section">
-		<h3>Select Throw Types</h3>
+		<h3>Throw Types:</h3>
 		<ThrowButtons />
 	</section>
 
 	<section class="pattern-length-section">
-		<h3>Pattern Configuration</h3>
+		<!-- <h3>Pattern Configuration</h3> -->
 		<PatternLengthInput />
 	</section>
 </div>
@@ -31,12 +31,7 @@
 		color: var(--text-color);
 	}
 
-	h2 {
-		margin-top: 0;
-		margin-bottom: 1.5rem;
-		color: var(--header-color);
-		font-size: 1.5rem;
-	}
+
 
 	h3 {
 		color: var(--header-color);
@@ -53,9 +48,7 @@
 	}
 
 	@media (min-width: 768px) {
-		h2 {
-			font-size: 1.8rem;
-		}
+
 
 		h3 {
 			font-size: 1.4rem;
