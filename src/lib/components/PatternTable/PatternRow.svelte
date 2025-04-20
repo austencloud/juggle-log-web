@@ -6,6 +6,12 @@
 	import type { PatternData } from '$lib/types/types';
 	import { uiState, showToast } from '$lib/stores/uiStore';
 	import Confetti from '../ui/Confetti.svelte';
+	// Import gamification utilities
+	import { gamificationStore } from '$lib/stores/gamificationStore';
+	import { achievementStore } from '$lib/stores/achievementStore';
+	import { AchievementCategory } from '$lib/types/achievements';
+	import { addNotification } from '$lib/stores/notificationStore';
+	import { ExperienceType } from '$lib/types/gamification';
 
 	export let patternData: PatternData;
 	export let evenRow: boolean = false;
@@ -25,6 +31,52 @@
 			// Display congratulation message
 			showToast(`Congratulations! You've mastered ${patternData.pattern}`, 'success');
 
+			// Add gamification features
+			const xpResult = gamificationStore.addExperience({
+				type: ExperienceType.PATTERN_MASTERY,
+				pattern: patternData.pattern,
+				catches: patternData.maxCatches
+			});
+			
+			// Show XP notification
+			addNotification(
+				`+${xpResult.xp} XP for mastering ${patternData.pattern}!`,
+				'achievement',
+				3000
+			);
+			
+			// Check for level up
+			if (xpResult.levelUp) {
+				addNotification(
+					`Level Up! You're now level ${$gamificationStore.level}`,
+					'level',
+					5000
+				);
+				
+				// Play confetti for level up
+				uiState.update((state) => ({
+					...state,
+					showConfetti: true
+				}));
+			}
+			
+			// Get count of completed patterns for achievements
+			const getCompletedPatternsCount = () => {
+				return index + 1; // For demo purposes
+			};
+			
+			// Check for achievements
+			const earnedAchievements = achievementStore.checkAchievements(
+				AchievementCategory.PATTERN_MASTERY, 
+				{ completedPatternsCount: getCompletedPatternsCount() }
+			);
+			
+			// Check for milestone achievements based on catches
+			achievementStore.checkAchievements(
+				AchievementCategory.MILESTONE,
+				{ maxCatches: patternData.maxCatches }
+			);
+			
 			// Reset flag after animation
 			setTimeout(() => {
 				justCompleted = false;

@@ -2,6 +2,10 @@
 <script lang="ts">
   import { progressStore } from '$lib/stores/progressStore';
   import { onMount } from 'svelte';
+  // Import gamification utilities
+  import { gamificationStore } from '$lib/stores/gamificationStore';
+  import { addNotification } from '$lib/stores/notificationStore';
+  import { ExperienceType } from '$lib/types/gamification';
   
   export let storageKey: string; // Changed from pattern
   export let displayPattern: string; // Added for display
@@ -18,7 +22,41 @@
   // Update progress when value changes, using storageKey
   function updateCatches(): void {
     catches = Math.max(MIN_CATCHES, Math.min(catches, MAX_CATCHES));
+    
+    // Record previous catches for comparison
+    const previousCatches = progressStore.getMaxCatches(storageKey);
+    
+    // Update progress store
     progressStore.setMaxCatches(storageKey, catches);
+    
+    // Award XP for improvement if catches increased
+    if (catches > previousCatches) {
+      const improvement = catches - previousCatches;
+      
+      const xpResult = gamificationStore.addExperience({
+        type: ExperienceType.PRACTICE,
+        pattern: displayPattern,
+        catchImprovement: improvement
+      });
+      
+      // Display XP gain notification for significant improvements
+      if (improvement >= 5) {
+        addNotification(
+          `+${xpResult.xp} XP for improving ${displayPattern} by ${improvement} catches!`,
+          'info',
+          3000
+        );
+      }
+      
+      // Check for level up
+      if (xpResult.levelUp) {
+        addNotification(
+          `Level Up! You're now level ${$gamificationStore.level}`,
+          'level',
+          5000
+        );
+      }
+    }
   }
   
   // Increment catches

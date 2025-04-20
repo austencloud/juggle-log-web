@@ -5,6 +5,12 @@
 	import PatternTable from './PatternTable/PatternTable.svelte';
 	import Confetti from './ui/Confetti.svelte'; // Import Confetti
 	import { isBrowser } from '$lib/utils/browser';
+	// Import gamification components
+	import LevelProgressBar from './Gamification/LevelProgressBar.svelte';
+	import PointsDisplay from './Gamification/PointsDisplay.svelte';
+	import NotificationCenter from './ui/NotificationCenter.svelte';
+	import { gamificationStore } from '$lib/stores/gamificationStore';
+	import { achievementStore } from '$lib/stores/achievementStore';
 
 	let innerWidth: number = 0;
 	let innerHeight: number = 0;
@@ -36,6 +42,10 @@
 			innerWidth = window.innerWidth;
 			innerHeight = window.innerHeight;
 			updateLayout();
+			
+			// Initialize gamification systems
+			gamificationStore.init();
+			achievementStore.init();
 		}
 	});
 
@@ -52,6 +62,9 @@
 	<Confetti />
 {/each}
 
+<!-- Add notification center for achievements and level ups -->
+<NotificationCenter position="top-right" />
+
 <div class="main-widget" class:wide-layout={isWideLayout} class:narrow-layout={!isWideLayout}> <!-- Removed themeStore class binding -->
 	<header class="widget-header">
 		<div class="header-content">
@@ -60,9 +73,11 @@
 			<h1 class="title" on:click={triggerConfetti}>Juggle Log</h1>
 		</div>
 		<div class="header-controls">
-			<!-- Removed ThemeToggle component -->
+			<PointsDisplay />
 		</div>
 	</header>
+	
+	<LevelProgressBar />
 
 	<div class="main-content" class:wide-layout={isWideLayout} class:narrow-layout={!isWideLayout}>
 		<div class="control-panel-wrapper">
