@@ -1,7 +1,9 @@
 <script lang="ts">
 	import ThrowButtons from './ThrowButtons.svelte';
 	import PatternLengthInput from './PatternLengthInput.svelte';
+	import UserManagement from '$lib/components/ui/UserManagement.svelte';
 	import { selectedThrows } from '$lib/stores/patternStore';
+	
 	function selectTemplate(throws: Iterable<string> | null | undefined) {
 		// Clear current selection
 		selectedThrows.set(new Set(throws));
@@ -9,7 +11,12 @@
 </script>
 
 <div class="control-panel">
-
+	<div class="panel-header">
+		<h2>Controls</h2>
+		<div class="user-management">
+			<UserManagement />
+		</div>
+	</div>
 
 	<section class="throw-buttons-section">
 		<h3>Throw Types:</h3>
@@ -31,7 +38,18 @@
 		color: var(--text-color);
 	}
 
+	.panel-header {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		margin-bottom: 1.5rem;
+	}
 
+	h2 {
+		margin: 0;
+		font-size: 1.5rem;
+		color: var(--header-color);
+	}
 
 	h3 {
 		color: var(--header-color);
@@ -48,8 +66,6 @@
 	}
 
 	@media (min-width: 768px) {
-
-
 		h3 {
 			font-size: 1.4rem;
 		}

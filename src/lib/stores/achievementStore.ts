@@ -198,6 +198,42 @@ export const createAchievementStore = () => {
     
     reset: () => {
       initAchievements();
+    },
+    
+    // Save state with user prefix
+    saveWithPrefix: (prefix: string) => {
+      let currentState: {
+        achievements: Record<string, Achievement>;
+        recentlyEarned: string[];
+      } | null = null;
+      
+      subscribe(state => { currentState = state; })();
+      
+      if (currentState && isBrowser) {
+        const prefixedKey = prefix + STORAGE_KEY;
+        localStorage.setItem(prefixedKey, JSON.stringify(currentState));
+      }
+    },
+    
+    // Load state with user prefix
+    loadWithPrefix: (prefix: string) => {
+      if (isBrowser) {
+        const prefixedKey = prefix + STORAGE_KEY;
+        const savedState = localStorage.getItem(prefixedKey);
+        
+        if (savedState) {
+          try {
+            const parsedState = JSON.parse(savedState);
+            set(parsedState);
+          } catch (e) {
+            console.error('Failed to parse saved achievement state', e);
+            initAchievements();
+          }
+        } else {
+          // No saved state for this user, use defaults
+          initAchievements();
+        }
+      }
     }
   };
 };

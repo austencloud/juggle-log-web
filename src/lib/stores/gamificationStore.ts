@@ -23,7 +23,7 @@ const defaultState: GamificationState = {
 export const createGamificationStore = () => {
   const { subscribe, update, set } = writable<GamificationState>(defaultState);
   
-  // Initialize from localStorage when in browser
+  // Initially load unprefixed data for backward compatibility
   if (isBrowser) {
     const savedState = localStorage.getItem(STORAGE_KEY);
     if (savedState) {
@@ -36,7 +36,7 @@ export const createGamificationStore = () => {
     }
   }
   
-  // Save state to localStorage on changes
+  // Save state to localStorage on changes with default key
   subscribe((state) => {
     if (isBrowser) {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
@@ -99,6 +99,38 @@ export const createGamificationStore = () => {
     
     reset: () => {
       set(defaultState);
+    },
+    
+    // Save state with user prefix
+    saveWithPrefix: (prefix: string) => {
+      let currentState: GamificationState | null = null;
+      subscribe(state => { currentState = state; })();
+      
+      if (currentState && isBrowser) {
+        const prefixedKey = prefix + STORAGE_KEY;
+        localStorage.setItem(prefixedKey, JSON.stringify(currentState));
+      }
+    },
+    
+    // Load state with user prefix
+    loadWithPrefix: (prefix: string) => {
+      if (isBrowser) {
+        const prefixedKey = prefix + STORAGE_KEY;
+        const savedState = localStorage.getItem(prefixedKey);
+        
+        if (savedState) {
+          try {
+            const parsedState = JSON.parse(savedState);
+            set(parsedState);
+          } catch (e) {
+            console.error('Failed to parse saved gamification state', e);
+            set(defaultState);
+          }
+        } else {
+          // No saved state for this user, use default
+          set(defaultState);
+        }
+      }
     },
     
     addExperience,

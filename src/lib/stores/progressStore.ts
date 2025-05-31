@@ -5,6 +5,8 @@ import { ProgressTracker } from '../utils/progressTracker';
 import { isBrowser } from '../utils/browser';
 import { showToast } from './uiStore';
 
+const STORAGE_KEY = 'jugglelog_progress';
+
 // Initialize progress store with data from localStorage if in browser
 const createProgressStore = () => {
     // Initialize with empty data
@@ -210,6 +212,42 @@ const createProgressStore = () => {
                     showToast('Error importing progress data: invalid format', 'error');
                 }
                 return false;
+            }
+        },
+
+        /**
+         * Save state with user prefix
+         */
+        saveWithPrefix: (prefix: string) => {
+            let currentState: ProgressData | null = null;
+            subscribe(state => { currentState = state; })();
+            
+            if (currentState && isBrowser) {
+                const prefixedKey = prefix + STORAGE_KEY;
+                localStorage.setItem(prefixedKey, JSON.stringify(currentState));
+            }
+        },
+        
+        /**
+         * Load state with user prefix
+         */
+        loadWithPrefix: (prefix: string) => {
+            if (isBrowser) {
+                const prefixedKey = prefix + STORAGE_KEY;
+                const savedState = localStorage.getItem(prefixedKey);
+                
+                if (savedState) {
+                    try {
+                        const parsedState = JSON.parse(savedState);
+                        set(parsedState);
+                    } catch (e) {
+                        console.error('Failed to parse saved progress state', e);
+                        set(initialData);
+                    }
+                } else {
+                    // No saved state for this user, use default
+                    set(initialData);
+                }
             }
         }
     };
