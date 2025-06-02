@@ -2,6 +2,8 @@
 import { supabase, getCurrentUser } from '../supabase';
 import type { Database } from '../types/database';
 import type { RecordSubmission, RecordFilters, WorldRecordWithHolders } from '../stores/worldRecordsStore';
+import { SiteswapService } from './siteswapService';
+import { PatternConverter } from '../utils/patternConverter';
 
 type WorldRecord = Database['public']['Tables']['world_records']['Row'];
 type WorldRecordInsert = Database['public']['Tables']['world_records']['Insert'];
@@ -127,7 +129,7 @@ export class WorldRecordsService {
   }
 
   /**
-   * Submit a new world record
+   * Submit a new world record with dual notation support
    */
   static async submitRecord(submission: RecordSubmission): Promise<WorldRecord> {
     const currentUser = await getCurrentUser();
@@ -135,33 +137,33 @@ export class WorldRecordsService {
       throw new Error('You must be logged in to submit a record');
     }
 
-    // Validate submission
-    this.validateSubmission(submission);
+    // Validate submission and enhance with dual notation
+    const enhancedSubmission = await this.validateAndEnhanceSubmission(submission);
 
     // Start transaction
     const { data: record, error: recordError } = await supabase
       .from('world_records')
       .insert({
-        category: submission.category,
-        subcategory: submission.subcategory,
-        object_count: submission.object_count,
-        pattern_siteswap: submission.pattern_siteswap,
-        pattern_custom: submission.pattern_custom,
-        pattern_description: submission.pattern_description,
-        record_type: submission.record_type,
-        value_number: submission.value_number,
-        value_unit: submission.value_unit,
-        date_set: submission.date_set,
-        location: submission.location,
-        event_name: submission.event_name,
-        video_url: submission.video_url,
-        video_platform: submission.video_platform || 'youtube',
-        video_start_time: submission.video_start_time || 0,
-        video_end_time: submission.video_end_time,
+        category: enhancedSubmission.category,
+        subcategory: enhancedSubmission.subcategory,
+        object_count: enhancedSubmission.object_count,
+        pattern_siteswap: enhancedSubmission.pattern_siteswap,
+        pattern_custom: enhancedSubmission.pattern_custom,
+        pattern_description: enhancedSubmission.pattern_description,
+        record_type: enhancedSubmission.record_type,
+        value_number: enhancedSubmission.value_number,
+        value_unit: enhancedSubmission.value_unit,
+        date_set: enhancedSubmission.date_set,
+        location: enhancedSubmission.location,
+        event_name: enhancedSubmission.event_name,
+        video_url: enhancedSubmission.video_url,
+        video_platform: enhancedSubmission.video_platform || 'youtube',
+        video_start_time: enhancedSubmission.video_start_time || 0,
+        video_end_time: enhancedSubmission.video_end_time,
         verification_status: 'pending',
         source: 'user_submission',
-        notes: submission.notes,
-        tags: submission.tags,
+        notes: enhancedSubmission.notes,
+        tags: enhancedSubmission.tags,
         created_by: currentUser.id
       } as WorldRecordInsert)
       .select()
@@ -334,15 +336,57 @@ export class WorldRecordsService {
   }
 
   /**
-   * Validate record submission
+   * Validate submission with independent dual notation support
+   *
+   * AlphaJuggle and siteswap notations are validated independently without
+   * any cross-conversion to prevent semantic confusion.
    */
-  private static validateSubmission(submission: RecordSubmission): void {
-    if (!submission.category) {
-      throw new Error('Category is required');
+  private static async validateAndEnhanceSubmission(submission: RecordSubmission): Promise<RecordSubmission> {
+    // Basic validation
+    this.validateBasicSubmission(submission);
+
+    // Enhanced submission without auto-conversion
+    const enhanced = { ...submission };
+
+    // Validate siteswap independently if present
+    if (enhanced.pattern_siteswap) {
+      const validation = SiteswapService.validateSiteswap(enhanced.pattern_siteswap);
+      if (!validation.isValid) {
+        throw new Error(`Invalid siteswap pattern: ${validation.errors.join(', ')}`);
+      }
+
+      // Auto-populate object count from siteswap if not provided
+      if (!enhanced.object_count && validation.objectCount) {
+        enhanced.object_count = validation.objectCount;
+      }
+
+      // Verify object count matches siteswap if both are provided
+      if (enhanced.object_count && validation.objectCount && enhanced.object_count !== validation.objectCount) {
+        throw new Error(`Object count (${enhanced.object_count}) doesn't match siteswap calculation (${validation.objectCount})`);
+      }
     }
 
-    if (!submission.object_count || submission.object_count < 1) {
-      throw new Error('Object count must be at least 1');
+    // Validate AlphaJuggle notation independently if present
+    if (enhanced.pattern_custom) {
+      // Use existing custom pattern validation logic here if available
+      // For now, basic validation that it's not empty
+      if (!enhanced.pattern_custom.trim()) {
+        throw new Error('AlphaJuggle pattern cannot be empty');
+      }
+    }
+
+    // Note: Pattern mapping storage is disabled until proper semantic mapping is implemented
+    // This prevents storing incorrect cross-notation relationships
+
+    return enhanced;
+  }
+
+  /**
+   * Basic submission validation
+   */
+  private static validateBasicSubmission(submission: RecordSubmission): void {
+    if (!submission.category) {
+      throw new Error('Category is required');
     }
 
     if (!submission.record_type) {
@@ -369,6 +413,11 @@ export class WorldRecordsService {
       throw new Error('At least one record holder is required');
     }
 
+    // At least one pattern notation is required
+    if (!submission.pattern_siteswap && !submission.pattern_custom) {
+      throw new Error('Either siteswap or custom pattern notation is required');
+    }
+
     // Validate video URL format
     if (!this.isValidVideoUrl(submission.video_url)) {
       throw new Error('Invalid video URL format');
@@ -379,6 +428,66 @@ export class WorldRecordsService {
     const today = new Date();
     if (recordDate > today) {
       throw new Error('Record date cannot be in the future');
+    }
+  }
+
+  /**
+   * DISABLED: Validate dual notation consistency
+   *
+   * Cross-notation validation is disabled to prevent semantic confusion
+   * between AlphaJuggle and siteswap notation systems.
+   */
+  private static async validateDualNotation(siteswap: string, custom: string): Promise<void> {
+    // Validate each notation independently
+    const siteswapValidation = SiteswapService.validateSiteswap(siteswap);
+    if (!siteswapValidation.isValid) {
+      throw new Error(`Invalid siteswap: ${siteswapValidation.errors.join(', ')}`);
+    }
+
+    // AlphaJuggle validation would go here when available
+    // For now, just check it's not empty
+    if (!custom.trim()) {
+      throw new Error('AlphaJuggle pattern cannot be empty');
+    }
+
+    // Note: Cross-notation consistency checking is intentionally disabled
+    // These notation systems represent different semantic models
+  }
+
+  /**
+   * DISABLED: Store pattern mapping for future reference
+   *
+   * Pattern mapping storage is disabled until proper semantic mapping
+   * research is completed to prevent storing incorrect relationships.
+   */
+  private static async storePatternMapping(customPattern: string, siteswapPattern: string): Promise<void> {
+    // Pattern mapping storage is intentionally disabled
+    console.log('Pattern mapping storage disabled - manual verification required for cross-notation relationships');
+  }
+
+  /**
+   * Get pattern suggestions for auto-completion
+   */
+  static async getPatternSuggestions(query: string, type: 'siteswap' | 'custom' = 'siteswap'): Promise<string[]> {
+    try {
+      const column = type === 'siteswap' ? 'pattern_siteswap' : 'pattern_custom';
+
+      const { data, error } = await supabase
+        .from('world_records')
+        .select(column)
+        .not(column, 'is', null)
+        .ilike(column, `%${query}%`)
+        .limit(10);
+
+      if (error) throw error;
+
+      return data
+        .map(record => record[column])
+        .filter((pattern): pattern is string => pattern !== null)
+        .filter((pattern, index, array) => array.indexOf(pattern) === index); // Remove duplicates
+    } catch (error) {
+      console.error('Error getting pattern suggestions:', error);
+      return [];
     }
   }
 

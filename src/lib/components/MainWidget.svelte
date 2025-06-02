@@ -91,48 +91,11 @@
 </div>
 
 <style>
-	/* 
+	/*
 		==============================
-		Global Dark Mode Variables
+		Main Widget Specific Styles
 		==============================
 	*/
-	:global(:root) {
-		/* Dark mode colors */
-		--primary-color: #4ecdc4;
-		--primary-dark: #45b7aa;
-		--text-color: #e0e0e0;
-		--text-light: #a0a0a0;
-		--header-color: #f0f0f0;
-		--background-color: #121212;
-		--card-background: #1e1e1e;
-		--border-color: #333;
-		--stripe-color: #1a1a1a;
-		--completed-color: rgba(144, 238, 144, 0.3);
-
-		/* Spacing */
-		--spacing-xs: 0.25rem;
-		--spacing-sm: 0.5rem;
-		--spacing-md: 1rem;
-		--spacing-lg: 1.5rem;
-		--spacing-xl: 2rem;
-
-		/* Font sizes */
-		--font-size-sm: 0.9rem;
-		--font-size-base: 1rem;
-		--font-size-md: 1.1rem;
-		--font-size-lg: 1.25rem;
-		--font-size-xl: 1.5rem;
-		--font-size-xxl: 2rem;
-		--font-size-xxxl: 3rem;
-
-		/* Border radius */
-		--border-radius-sm: 0.25rem;
-		--border-radius-md: 0.5rem;
-
-		/* Shadows */
-		--shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.1);
-		--shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
-	}
 
 	:global(*) {
 		box-sizing: border-box;

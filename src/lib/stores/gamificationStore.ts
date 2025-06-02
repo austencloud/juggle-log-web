@@ -1,10 +1,9 @@
-import { writable, derived } from 'svelte/store';
+import { writable, derived, get } from 'svelte/store';
 import type { GamificationState, ExperienceEvent, LevelUpEvent } from '../types/gamification';
 import { 
+  calculateXPGain, 
   calculateLevelFromXP, 
-  calculateXPForNextLevel, 
-  getXPRequiredForLevel, 
-  calculateXPGain,
+  getXPRequiredForLevel,
   applyStreakBonus,
   applyDifficultyModifier
 } from '../utils/experienceCalculator';
@@ -16,147 +15,100 @@ const defaultState: GamificationState = {
   level: 1,
   totalXP: 0,
   currentLevelXP: 0,
-  xpToNextLevel: 400, // XP needed for level 2
+  xpToNextLevel: 400,
   lastLevelUp: null
 };
 
-export const createGamificationStore = () => {
-  const { subscribe, update, set } = writable<GamificationState>(defaultState);
+function createGamificationStore() {
+  const store = writable<GamificationState>(defaultState);
+  const { subscribe, update, set } = store;
   
-  // Initially load unprefixed data for backward compatibility
-  if (isBrowser) {
-    const savedState = localStorage.getItem(STORAGE_KEY);
-    if (savedState) {
-      try {
-        const parsedState = JSON.parse(savedState);
-        set(parsedState);
-      } catch (e) {
-        console.error('Failed to parse saved gamification state', e);
-      }
+  const progress = derived(
+    store,
+    ($state) => {
+      const totalLevelXP = $state.currentLevelXP + $state.xpToNextLevel;
+      return totalLevelXP > 0 ? ($state.currentLevelXP / totalLevelXP) * 100 : 0;
+    }
+  );
+
+  function saveToStorage(state: GamificationState, prefix: string = '') {
+    if (!isBrowser) return;
+    try {
+      const key = prefix + STORAGE_KEY;
+      localStorage.setItem(key, JSON.stringify(state));
+    } catch (error) {
+      console.error('Failed to save gamification state:', error);
     }
   }
-  
-  // Save state to localStorage on changes with default key
-  subscribe((state) => {
-    if (isBrowser) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-    }
-  });
 
-  // Function to add experience and handle level ups
-  const addExperience = (event: ExperienceEvent): { xp: number, levelUp: boolean } => {
-    let xpGained = calculateXPGain(event);
-    let leveledUp = false;
-    
-    update(state => {
-      // Add XP to total
-      const newTotalXP = state.totalXP + xpGained;
-      
-      // Calculate new level
-      const newLevel = calculateLevelFromXP(newTotalXP);
-      const levelUp = newLevel > state.level;
-      
-      if (levelUp) {
-        leveledUp = true;
-      }
-      
-      // Calculate XP within current level
-      const levelXPRequirement = getXPRequiredForLevel(newLevel);
-      const nextLevelXPRequirement = getXPRequiredForLevel(newLevel + 1);
-      const currentLevelXP = newTotalXP - levelXPRequirement;
-      const xpToNextLevel = nextLevelXPRequirement - levelXPRequirement - currentLevelXP;
-      
-      return {
-        level: newLevel,
-        totalXP: newTotalXP,
-        currentLevelXP,
-        xpToNextLevel,
-        lastLevelUp: levelUp ? Date.now() : state.lastLevelUp
-      };
-    });
-    
-    return { xp: xpGained, levelUp: leveledUp };
-  };
-  
-  // Get current level progress as a percentage
-  const getProgress = (): number => {
-    let progress = 0;
-    
-    subscribe(state => {
-      const totalLevelXP = state.currentLevelXP + state.xpToNextLevel;
-      progress = totalLevelXP > 0 ? (state.currentLevelXP / totalLevelXP) * 100 : 0;
-    })();
-    
-    return progress;
-  };
-  
+  function loadFromStorage(prefix: string = ''): GamificationState {
+    if (!isBrowser) return defaultState;
+    try {
+      const key = prefix + STORAGE_KEY;
+      const saved = localStorage.getItem(key);
+      return saved ? JSON.parse(saved) : defaultState;
+    } catch (error) {
+      console.error('Failed to load gamification state:', error);
+      return defaultState;
+    }
+  }
+
   return {
     subscribe,
-    
-    init: () => {
-      // Any initialization logic if needed
+    progress,
+
+    init() {
+      const saved = loadFromStorage();
+      set(saved);
     },
-    
-    reset: () => {
-      set(defaultState);
-    },
-    
-    // Save state with user prefix
-    saveWithPrefix: (prefix: string) => {
-      let currentState: GamificationState | null = null;
-      subscribe(state => { currentState = state; })();
+
+    addExperience(event: ExperienceEvent): { xp: number, levelUp: boolean } {
+      let xpGained = calculateXPGain(event);
+      let leveledUp = false;
       
-      if (currentState && isBrowser) {
-        const prefixedKey = prefix + STORAGE_KEY;
-        localStorage.setItem(prefixedKey, JSON.stringify(currentState));
-      }
-    },
-    
-    // Load state with user prefix
-    loadWithPrefix: (prefix: string) => {
-      if (isBrowser) {
-        const prefixedKey = prefix + STORAGE_KEY;
-        const savedState = localStorage.getItem(prefixedKey);
+      update(state => {
+        const newTotalXP = state.totalXP + xpGained;
+        const newLevel = calculateLevelFromXP(newTotalXP);
+        const levelUp = newLevel > state.level;
         
-        if (savedState) {
-          try {
-            const parsedState = JSON.parse(savedState);
-            set(parsedState);
-          } catch (e) {
-            console.error('Failed to parse saved gamification state', e);
-            set(defaultState);
-          }
-        } else {
-          // No saved state for this user, use default
-          set(defaultState);
-        }
-      }
-    },
-    
-    addExperience,
-    
-    calculateLevel: (xp: number) => calculateLevelFromXP(xp),
-    
-    getRequiredXP: (level: number) => getXPRequiredForLevel(level),
-    
-    getProgress,
-    
-    checkLevelUp: (oldXP: number, newXP: number): LevelUpEvent | null => {
-      const oldLevel = calculateLevelFromXP(oldXP);
-      const newLevel = calculateLevelFromXP(newXP);
-      
-      if (newLevel > oldLevel) {
-        return {
+        if (levelUp) leveledUp = true;
+        
+        const levelXPRequirement = getXPRequiredForLevel(newLevel);
+        const nextLevelXPRequirement = getXPRequiredForLevel(newLevel + 1);
+        const currentLevelXP = newTotalXP - levelXPRequirement;
+        const xpToNextLevel = nextLevelXPRequirement - levelXPRequirement - currentLevelXP;
+        
+        const newState = {
           level: newLevel,
-          xpGained: newXP - oldXP,
-          timestamp: Date.now()
+          totalXP: newTotalXP,
+          currentLevelXP,
+          xpToNextLevel,
+          lastLevelUp: levelUp ? Date.now() : state.lastLevelUp
         };
-      }
+
+        saveToStorage(newState);
+        return newState;
+      });
       
-      return null;
+      return { xp: xpGained, levelUp: leveledUp };
     },
-    
-    applyXPModifiers: (baseXP: number, modifiers: { streakDays?: number, difficulty?: number }) => {
+
+    saveWithPrefix(prefix: string) {
+      const state = get(store);
+      saveToStorage(state, prefix);
+    },
+
+    loadWithPrefix(prefix: string) {
+      const state = loadFromStorage(prefix);
+      set(state);
+    },
+
+    reset() {
+      set(defaultState);
+      saveToStorage(defaultState);
+    },
+
+    applyXPModifiers(baseXP: number, modifiers: { streakDays?: number, difficulty?: number }) {
       let modifiedXP = baseXP;
       
       if (modifiers.streakDays) {
@@ -170,6 +122,6 @@ export const createGamificationStore = () => {
       return modifiedXP;
     }
   };
-};
+}
 
 export const gamificationStore = createGamificationStore();

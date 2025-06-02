@@ -1,0 +1,153 @@
+/* F5 Magic - Development Experience Enhancements */
+
+/* Debug mode styles */
+body.debug-mode {
+  position: relative;
+}
+
+body.debug-mode::before {
+  content: "🐛 DEBUG MODE";
+  position: fixed;
+  top: 0;
+  left: 0;
+  background: rgba(255, 193, 7, 0.9);
+  color: #000;
+  padding: 4px 12px;
+  font-size: 12px;
+  font-weight: bold;
+  z-index: 10001;
+  border-bottom-right-radius: 8px;
+  backdrop-filter: blur(10px);
+}
+
+/* Magical loading states */
+@keyframes magicalShimmer {
+  0% { background-position: -200px 0; }
+  100% { background-position: calc(200px + 100%) 0; }
+}
+
+@keyframes magicalFadeIn {
+  from { opacity: 0; transform: translateY(20px) scale(0.95); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes magicalPulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.05); opacity: 0.8; }
+}
+
+/* Enhanced focus states for better F5 UX */
+*:focus-visible {
+  outline: 2px solid #667eea;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Smooth transitions for all interactive elements */
+button, input, select, textarea, .interactive {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Loading shimmer effect for dynamic content */
+.loading-shimmer {
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.1) 0%,
+    rgba(255, 255, 255, 0.3) 50%,
+    rgba(255, 255, 255, 0.1) 100%
+  );
+  background-size: 200px 100%;
+  animation: magicalShimmer 1.5s infinite;
+}
+
+/* Magical page transition */
+.page-transition {
+  animation: magicalFadeIn 0.5s ease-out;
+}
+
+/* Enhanced scrollbar for better UX */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(102, 126, 234, 0.5);
+  border-radius: 4px;
+  transition: background 0.2s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(102, 126, 234, 0.7);
+}
+
+/* Magical component entrance animations */
+.magic-entrance {
+  animation: magicalFadeIn 0.6s ease-out;
+}
+
+.magic-pulse {
+  animation: magicalPulse 2s infinite;
+}
+
+/* Development-only styles */
+@media (max-width: 768px) {
+  #dev-overlay {
+    left: 10px !important;
+    right: 10px !important;
+    bottom: 10px !important;
+    max-width: none !important;
+  }
+  
+  #dev-notification {
+    right: 10px !important;
+    left: 10px !important;
+    top: 10px !important;
+    transform: translateY(-100%) !important;
+  }
+  
+  #dev-notification.show {
+    transform: translateY(0) !important;
+  }
+}
+
+/* Preload indicators */
+.preloading {
+  position: relative;
+  overflow: hidden;
+}
+
+.preloading::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #667eea, transparent);
+  animation: magicalShimmer 1.5s infinite;
+}
+
+/* Error state improvements */
+.error-boundary {
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: 8px;
+  padding: 16px;
+  margin: 16px 0;
+  animation: magicalFadeIn 0.3s ease-out;
+}
+
+/* Success state improvements */
+.success-state {
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  border-radius: 8px;
+  padding: 16px;
+  margin: 16px 0;
+  animation: magicalFadeIn 0.3s ease-out;
+}

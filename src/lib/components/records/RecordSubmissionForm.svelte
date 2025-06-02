@@ -3,6 +3,7 @@
   import { createEventDispatcher } from 'svelte';
   import { worldRecordsStore, type RecordSubmission } from '../../stores/worldRecordsStore';
   import { enhancedUserStore } from '../../stores/enhancedUserStore';
+  import { SiteswapService } from '../../services/siteswapService';
   import VideoValidator from '../video/VideoValidator.svelte';
   import type { VideoValidationResult } from '../../services/videoService';
   
@@ -25,9 +26,20 @@
   let isSubmitting = false;
   let submitError = '';
   let videoValidation: { isValid: boolean; result?: VideoValidationResult } = { isValid: false };
+
+  // Siteswap validation state
+  let siteswapValidation: { isValid: boolean; errors: string[]; objectCount?: number } = { isValid: true, errors: [] };
+
+  // UI state
+  let activeNotationTab: 'siteswap' | 'custom' = 'siteswap';
   
+  // Reactive validations
+  $: if (formData.pattern_siteswap) {
+    validateSiteswap(formData.pattern_siteswap);
+  }
+
   // Form validation
-  $: isFormValid = 
+  $: isFormValid =
     formData.category &&
     formData.object_count &&
     formData.object_count > 0 &&
@@ -40,7 +52,9 @@
     videoValidation.isValid &&
     formData.holder_names &&
     formData.holder_names.length > 0 &&
-    formData.holder_names.every(name => name.trim().length > 0);
+    formData.holder_names.every(name => name.trim().length > 0) &&
+    (formData.pattern_siteswap || formData.pattern_custom) &&
+    (!formData.pattern_siteswap || siteswapValidation.isValid);
   
   // Options
   const categories = [
@@ -96,6 +110,26 @@
   
   function handleVideoValidation(event: CustomEvent) {
     videoValidation = event.detail;
+  }
+
+  function validateSiteswap(pattern: string) {
+    siteswapValidation = SiteswapService.validateSiteswap(pattern);
+
+    if (siteswapValidation.isValid && siteswapValidation.objectCount) {
+      // Auto-update object count if it matches
+      if (!formData.object_count || formData.object_count !== siteswapValidation.objectCount) {
+        formData.object_count = siteswapValidation.objectCount;
+      }
+    }
+  }
+
+  function clearPattern(type: 'siteswap' | 'custom') {
+    if (type === 'siteswap') {
+      formData.pattern_siteswap = '';
+      siteswapValidation = { isValid: true, errors: [] };
+    } else {
+      formData.pattern_custom = '';
+    }
   }
   
   async function handleSubmit() {
@@ -204,26 +238,101 @@
         placeholder="e.g., 3-ball cascade, 5-ball flash, etc."
       />
     </div>
-    
-    <div class="form-group">
-      <label for="pattern_siteswap">Siteswap Notation</label>
-      <input
-        id="pattern_siteswap"
-        type="text"
-        bind:value={formData.pattern_siteswap}
-        placeholder="e.g., 531, 97531, etc."
-      />
+  </div>
+
+  <!-- Enhanced Pattern Notation Section -->
+  <div class="form-section">
+    <h3>Pattern Notation *</h3>
+    <p class="section-description">
+      Enter the juggling pattern using either siteswap notation (mathematical timing) or AlphaJuggle notation (semantic descriptors).
+      These are independent notation systems - manual entry in both formats is required for dual notation records.
+    </p>
+
+    <div class="notation-tabs">
+      <button
+        type="button"
+        class="tab-btn"
+        class:active={activeNotationTab === 'siteswap'}
+        on:click={() => activeNotationTab = 'siteswap'}
+      >
+        Siteswap
+      </button>
+      <button
+        type="button"
+        class="tab-btn"
+        class:active={activeNotationTab === 'custom'}
+        on:click={() => activeNotationTab = 'custom'}
+      >
+        Custom
+      </button>
     </div>
-    
-    <div class="form-group">
-      <label for="pattern_custom">Custom Notation</label>
-      <input
-        id="pattern_custom"
-        type="text"
-        bind:value={formData.pattern_custom}
-        placeholder="e.g., SDF, BPSO, etc."
-      />
-    </div>
+
+    {#if activeNotationTab === 'siteswap'}
+      <div class="notation-input">
+        <div class="input-with-validation">
+          <input
+            type="text"
+            bind:value={formData.pattern_siteswap}
+            placeholder="e.g., 3, 441, 531, (4,4)(4,0)"
+            class:error={!siteswapValidation.isValid}
+          />
+          <button
+            type="button"
+            class="clear-btn"
+            on:click={() => clearPattern('siteswap')}
+            title="Clear siteswap"
+          >
+            ×
+          </button>
+        </div>
+
+        {#if !siteswapValidation.isValid}
+          <div class="validation-errors">
+            {#each siteswapValidation.errors as error}
+              <div class="error-message">⚠️ {error}</div>
+            {/each}
+          </div>
+        {:else if formData.pattern_siteswap && siteswapValidation.isValid}
+          <div class="validation-success">
+            ✅ Valid siteswap
+            {#if siteswapValidation.objectCount}
+              • {siteswapValidation.objectCount} objects
+            {/if}
+          </div>
+        {/if}
+
+        <div class="notation-help">
+          <p><strong>Siteswap Notation:</strong> Mathematical representation of throw timing and hand destinations</p>
+          <p><small>Numbers represent throw heights: 3=cascade, 4=fountain, 5=high throw, etc.</small></p>
+        </div>
+      </div>
+    {:else}
+      <div class="notation-input">
+        <div class="input-with-validation">
+          <input
+            type="text"
+            bind:value={formData.pattern_custom}
+            placeholder="e.g., SSS, SDS, SDLSO"
+          />
+          <button
+            type="button"
+            class="clear-btn"
+            on:click={() => clearPattern('custom')}
+            title="Clear AlphaJuggle notation"
+          >
+            ×
+          </button>
+        </div>
+
+        <div class="notation-help">
+          <p><strong>AlphaJuggle Notation:</strong> Uses semantic descriptors for juggling techniques</p>
+          <p><small>S=Single, D=Double, L=Lazy, F=Flat, B=Behind, P=Penguin, O=Over, etc.</small></p>
+        </div>
+      </div>
+    {/if}
+  </div>
+
+  <div class="form-grid">
     
     <!-- Record Details -->
     <div class="form-group">
@@ -598,22 +707,132 @@
     background: #9ca3af;
     cursor: not-allowed;
   }
-  
+
+  /* Enhanced Pattern Notation Styles */
+  .section-description {
+    color: #6b7280;
+    font-size: 0.9rem;
+    margin-bottom: 1rem;
+  }
+
+  .notation-tabs {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+    border-bottom: 1px solid #e5e7eb;
+  }
+
+  .tab-btn {
+    background: none;
+    border: none;
+    padding: 0.75rem 1rem;
+    cursor: pointer;
+    color: #6b7280;
+    border-bottom: 2px solid transparent;
+    transition: all 0.3s;
+    font-weight: 500;
+  }
+
+  .tab-btn:hover {
+    color: #374151;
+  }
+
+  .tab-btn.active {
+    color: var(--primary-color);
+    border-bottom-color: var(--primary-color);
+  }
+
+  .notation-input {
+    margin-bottom: 1rem;
+  }
+
+  .input-with-validation {
+    position: relative;
+    display: flex;
+    align-items: center;
+  }
+
+  .input-with-validation input {
+    flex: 1;
+    padding-right: 2.5rem;
+  }
+
+  .input-with-validation input.error {
+    border-color: #ef4444;
+    background-color: #fef2f2;
+  }
+
+  .clear-btn {
+    position: absolute;
+    right: 0.5rem;
+    background: none;
+    border: none;
+    color: #9ca3af;
+    cursor: pointer;
+    font-size: 1.2rem;
+    padding: 0.25rem;
+    border-radius: 0.25rem;
+    transition: all 0.2s;
+  }
+
+  .clear-btn:hover {
+    color: #6b7280;
+    background: #f3f4f6;
+  }
+
+  .validation-errors {
+    margin-top: 0.5rem;
+  }
+
+  .error-message {
+    color: #ef4444;
+    font-size: 0.875rem;
+    margin-bottom: 0.25rem;
+  }
+
+  .validation-success {
+    color: #10b981;
+    font-size: 0.875rem;
+    margin-top: 0.5rem;
+  }
+
+  .notation-help {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.375rem;
+    padding: 0.75rem;
+    margin-top: 0.5rem;
+    font-size: 0.875rem;
+  }
+
+  .notation-help p {
+    margin: 0 0 0.25rem 0;
+    color: #475569;
+  }
+
+  .notation-help small {
+    color: #64748b;
+  }
+
   @media (max-width: 768px) {
     .record-submission-form {
       padding: 1rem;
     }
-    
+
     .form-grid {
       grid-template-columns: 1fr;
     }
-    
+
     .video-timing {
       grid-template-columns: 1fr;
     }
-    
+
     .form-actions {
       flex-direction: column;
+    }
+
+    .notation-tabs {
+      flex-wrap: wrap;
     }
   }
 </style>

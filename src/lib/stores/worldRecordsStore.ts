@@ -1,6 +1,6 @@
 // src/lib/stores/worldRecordsStore.ts
 import { writable, derived } from 'svelte/store';
-import { supabase, getCurrentUser } from '../supabase';
+import { supabase, getCurrentUser, isSupabaseConfigured } from '../supabase';
 import type { Database } from '../types/database';
 
 type WorldRecord = Database['public']['Tables']['world_records']['Row'];
@@ -75,6 +75,15 @@ function createWorldRecordsStore() {
     // Load world records with optional filters
     async loadRecords(filters: RecordFilters = {}, page = 1, pageSize = 20) {
       update(state => ({ ...state, isLoading: true, error: null }));
+
+      if (!isSupabaseConfigured()) {
+        update(state => ({
+          ...state,
+          error: 'Database not configured',
+          isLoading: false
+        }));
+        return;
+      }
 
       try {
         let query = supabase
@@ -273,20 +282,39 @@ function createWorldRecordsStore() {
       }
     },
 
-    // Update filters
+    // Update filters and reload
     setFilters(newFilters: RecordFilters) {
       update(state => ({
         ...state,
-        filters: { ...state.filters, ...newFilters }
+        filters: { ...state.filters, ...newFilters },
+        currentPage: 1 // Reset to first page when filters change
       }));
+
+      // Reload with new filters
+      let currentState: WorldRecordsState;
+      subscribe(state => { currentState = state; })();
+      this.loadRecords(currentState.filters, 1, currentState.pageSize);
     },
 
-    // Clear filters
+    // Clear filters and reload
     clearFilters() {
       update(state => ({
         ...state,
-        filters: {}
+        filters: {},
+        currentPage: 1
       }));
+
+      // Reload without filters
+      let currentState: WorldRecordsState;
+      subscribe(state => { currentState = state; })();
+      this.loadRecords({}, 1, currentState.pageSize);
+    },
+
+    // Set page and reload
+    setPage(page: number) {
+      let currentState: WorldRecordsState;
+      subscribe(state => { currentState = state; })();
+      this.loadRecords(currentState.filters, page, currentState.pageSize);
     },
 
     // Get current records (for derived stores)

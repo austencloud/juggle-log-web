@@ -10,7 +10,7 @@
   let deletingUserId: string | null = null;
   
   $: currentUser = $userStore.currentUserId 
-    ? $userStore.users.find(u => u.id === $userStore.currentUserId)
+    ? $userStore.users.find((u: User) => u.id === $userStore.currentUserId)
     : null;
 
   function togglePanel() {
@@ -31,13 +31,13 @@
       userStore.createUser(username);
       username = '';
       showToast('User created and logged in successfully', 'success');
-    } catch (error) {
-      showToast(error.message || 'Error creating user', 'error');
+    } catch (error: any) {
+      showToast(error?.message || 'Error creating user', 'error');
     }
   }
   
   function handleLogin(userId: string) {
-    userStore.loginUser(userId);
+    userStore.login(userId);
     showToast('Logged in successfully', 'success');
   }
   
@@ -57,8 +57,8 @@
     try {
       userStore.deleteUser(deletingUserId);
       showToast('User deleted successfully', 'success');
-    } catch (error) {
-      showToast(error.message || 'Error deleting user', 'error');
+    } catch (error: any) {
+      showToast(error?.message || 'Error deleting user', 'error');
     } finally {
       confirmingDelete = false;
       deletingUserId = null;
@@ -70,7 +70,7 @@
   }
   
   function confirmResetData() {
-    userStore.resetUserData();
+    userStore.reset();
     showToast('All progress data has been reset', 'info');
     confirmingReset = false;
   }
@@ -155,7 +155,7 @@
               <div class="user-actions">
                 {#if user.id !== $userStore.currentUserId}
                   <button class="button primary" on:click={() => handleLogin(user.id)}>Login</button>
-                  <button class="button danger icon" on:click={() => startDeleteUser(user.id)}>
+                  <button class="button danger icon" on:click={() => startDeleteUser(user.id)} aria-label="Delete user {user.username}">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
                       <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM8 9h8v10H8V9zm7.5-5l-1-1h-5l-1 1H5v2h14V4h-3.5z"/>
                     </svg>

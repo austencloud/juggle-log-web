@@ -4,7 +4,7 @@ import { isBrowser } from '../utils/browser';
 import { gamificationStore } from './gamificationStore';
 import { progressStore } from './progressStore';
 import { achievementStore } from './achievementStore';
-import { supabase, getCurrentUser, ensureUserProfile } from '../supabase';
+import { supabase, getCurrentUser, ensureUserProfile, isSupabaseConfigured } from '../supabase';
 import { DataMigration } from '../utils/dataMigration';
 import type { Database } from '../types/database';
 
@@ -82,8 +82,10 @@ function createEnhancedUserStore() {
       }
     }
     
-    // Initialize Supabase auth listener
-    initializeAuth();
+    // Initialize Supabase auth listener only if configured
+    if (isSupabaseConfigured()) {
+      initializeAuth();
+    }
   }
   
   // Initialize Supabase authentication

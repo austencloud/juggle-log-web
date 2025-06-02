@@ -3,18 +3,26 @@ import MainWidget from './lib/components/MainWidget.svelte';
 import { userStore } from './lib/stores/userStore';
 import { achievementStore } from './lib/stores/achievementStore';
 import { isBrowser } from './lib/utils/browser';
+import DevUtils from './lib/utils/devUtils';
+
+// Import F5 Magic in development
+if (import.meta.env.DEV) {
+  import('./hmr-debug');
+}
 
 // Initialize stores
 if (isBrowser) {
+  DevUtils.init();
+  
   // Initialize achievements
   achievementStore.init();
   
   // Check if there's a current user and ensure their data is loaded
   const currentUser = userStore.getCurrentUser();
   if (currentUser) {
-    console.log(`User session restored: ${currentUser.username}`);
+    DevUtils.log(`User session restored: ${currentUser.username}`);
   } else {
-    console.log('No active user session');
+    DevUtils.log('No active user session');
   }
 }
 

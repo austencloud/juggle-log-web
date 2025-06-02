@@ -6,26 +6,39 @@ import { browser } from '$app/environment'
 
 let supabase: ReturnType<typeof createClient<Database>> | null = null
 
-if (browser && PUBLIC_SUPABASE_URL && PUBLIC_SUPABASE_ANON_KEY) {
-  supabase = createClient<Database>(
-    PUBLIC_SUPABASE_URL,
-    PUBLIC_SUPABASE_ANON_KEY,
-    {
-      auth: {
-        autoRefreshToken: true,
-        persistSession: true,
-        detectSessionInUrl: true
-      },
-      realtime: {
-        params: {
-          eventsPerSecond: 10
+// Only create client if we have valid configuration
+if (browser && PUBLIC_SUPABASE_URL && PUBLIC_SUPABASE_ANON_KEY &&
+    PUBLIC_SUPABASE_URL !== '' && PUBLIC_SUPABASE_ANON_KEY !== '' &&
+    PUBLIC_SUPABASE_URL.startsWith('https://')) {
+  try {
+    supabase = createClient<Database>(
+      PUBLIC_SUPABASE_URL,
+      PUBLIC_SUPABASE_ANON_KEY,
+      {
+        auth: {
+          autoRefreshToken: true,
+          persistSession: true,
+          detectSessionInUrl: true
+        },
+        realtime: {
+          params: {
+            eventsPerSecond: 10
+          }
         }
       }
-    }
-  )
+    )
+  } catch (error) {
+    console.warn('Failed to initialize Supabase client:', error)
+    supabase = null
+  }
 }
 
 export { supabase }
+
+// Check if Supabase is properly configured
+export const isSupabaseConfigured = () => {
+  return !!(PUBLIC_SUPABASE_URL && PUBLIC_SUPABASE_ANON_KEY && supabase)
+}
 
 // Helper function to get the current user
 export async function getCurrentUser() {

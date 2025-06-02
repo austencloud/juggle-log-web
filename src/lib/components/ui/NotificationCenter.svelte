@@ -37,16 +37,22 @@
           on:dismiss={() => handleDismiss(notification.id)}
         />
       {:else}
-        <button 
+        <div 
           class="notification {notification.type}"
+          role="button"
+          tabindex="0"
           on:click={() => handleDismiss(notification.id)}
           on:keydown={(e) => handleKeydown(e, notification.id)}
         >
           <div class="notification-content">
             <div class="notification-message">{notification.message}</div>
           </div>
-          <button class="close-button" aria-label="Dismiss notification">×</button>
-        </button>
+          <button 
+            class="close-button" 
+            aria-label="Dismiss notification"
+            on:click|stopPropagation={() => handleDismiss(notification.id)}
+          >×</button>
+        </div>
       {/if}
     </div>
   {/each}
